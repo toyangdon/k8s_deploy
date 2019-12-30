@@ -1,8 +1,6 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  annotations:
-    scheduler.alpha.kubernetes.io/critical-pod: ""
   labels:
     component: kube-controller-manager
     tier: control-plane
@@ -10,6 +8,7 @@ metadata:
   namespace: kube-system
 spec:
   hostNetwork: true
+  priorityClassName: system-cluster-critical
   containers:
   - name: kube-controller-manager
     image: {{BASE_IMAGE_URL}}/{{k8s_controller_image}}
@@ -24,6 +23,7 @@ spec:
       - --cluster-signing-cert-file={{ ca_dir }}/ca.pem
       - --cluster-signing-key-file={{ ca_dir }}/ca-key.pem
       - --service-account-private-key-file={{ ca_dir }}/ca-key.pem
+      - --use-service-account-credentials=true
       - --root-ca-file={{ ca_dir }}/ca.pem
       - --leader-elect=true
       - --node-monitor-grace-period=40s

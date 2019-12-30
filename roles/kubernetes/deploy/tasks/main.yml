@@ -11,7 +11,7 @@
   - cfssl-certinfo
   - cfssljson
   
-- name: 下载ubectl
+- name: 下载kubectl
   copy: src={{ base_dir }}/bin/kubernetes/kubectl dest={{ bin_dir }}/kubectl mode=0755
 
 # 注册变量p，根据p的stat信息判断是否已经生成过ca证书，如果没有，下一步生成证书

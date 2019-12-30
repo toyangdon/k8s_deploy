@@ -1,0 +1,506 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: uimp-cloud
+  labels:
+    k8s-app: filebeat
+    kubernetes.io/cluster-service: "true"
+data:
+  filebeat.yml: |-
+    name: ${NAME}
+    fields_under_root: true
+    filebeat.config:
+      prospectors:
+        # Mounted `filebeat-prospectors` configmap:
+        path: ${path.config}/prospectors.d/*.yml
+        # Reload prospectors configs as they change:
+        reload.enabled: false
+      modules:
+        path: ${path.config}/modules.d/*.yml
+        # Reload module configs as they change:
+        reload.enabled: false
+    processors:
+      - add_cloud_metadata:
+    cloud.id: ${ELASTIC_CLOUD_ID}
+    cloud.auth: ${ELASTIC_CLOUD_AUTH}
+    #==================== Elasticsearch template setting ==========================
+    setup.template.settings:
+      index.number_of_shards: 3
+    setup.kibana:
+    setup.template.name: "filebeat"
+    setup.template.pattern: "filebeat-*"
+    setup.template.overwrite: true
+    #--------------------es output-----------
+    #output.elasticsearch:
+    #  hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
+    #  username: ${ELASTICSEARCH_USERNAME}
+    #  password: ${ELASTICSEARCH_PASSWORD}
+    output.logstash:
+      enabled: true
+      compression_level: 4
+      loadbalance: true
+      hosts: ['${LOGSTASH_HOST:logstash}:${LOGSTASH_PORT:8080}']
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-prospectors
+  namespace: uimp-cloud
+  labels:
+    k8s-app: filebeat
+    kubernetes.io/cluster-service: "true"
+data:
+  applog.yml: |
+    - type: log
+      enabled: true
+      fields:
+        type: applog
+      paths:
+        #- /data/docker/containers/*/*json.log
+        - /var/lib/docker/containers/*/*json.log
+      multiline.pattern: ^\[
+      multiline.negate: true
+      multiline.match: after
+      json.message_key: log
+      json.keys_under_root: true
+  mongodb.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: mongodb
+        name: log
+      paths:
+        - /tmplog/varlog/mongodb/mongod.log
+      multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  gfs.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: gfs
+        name: gfs-log
+      paths:
+        - /tmplog/varlog/glusterfs/glusterd.log
+      multiline.pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: gfs
+        name: bricks-log
+      paths:
+        - /tmplog/varlog/glusterfs/bricks/var-lib-heketi-mounts-vg_*-brick_*-brick.log
+      multiline.pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: gfs
+        name: cli-log
+      paths:
+        - /tmplog/varlog/glusterfs/cli.log
+      multiline.pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: gfs
+        name: shd-log
+      paths:
+        - /tmplog/varlog/glusterfs/glustershd.log
+      multiline.pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  harbor.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: harbor
+        name: adminserver
+      paths:
+        - /tmplog/varlog/harbor/*/adminserver.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: harbor
+        name: jobservice
+      paths:
+        - /tmplog/varlog/harbor/*/jobservice.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: harbor
+        name: ui
+      paths:
+        - /tmplog/varlog/harbor/*/ui.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: harbor
+        name: proxy
+      paths:
+        - /tmplog/varlog/harbor/*/proxy.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  k8s-allnode.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: kubelet
+      paths:
+        - /tmplog/data/kubelet/kubelet.*.log.ERROR.*
+        - /tmplog/data/kubelet/kubelet.*.log.WARN.*
+        - /tmplog/data/kubelet/kubelet.*.log.INFO.*
+      multiline.pattern: '^[A-Z]{1}[0-9]{4} [0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: kube-proxy
+      paths:
+        - /tmplog/data/kube-proxy/kube-proxy*.ERROR.*
+        - /tmplog/data/kube-proxy/kube-proxy*.WARN.*
+        - /tmplog/data/kube-proxy/kube-proxy*.INFO.*
+      multiline.pattern: '^[A-Z]{1}[0-9]{4} [0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  k8s-lbnode.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: haproxylog
+      paths:
+        - /tmplog/data/haproxy/haproxy.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: keepalivedlog
+      paths:
+        - /tmplog/data/keepalived/keepalived.log
+      multiline.pattern: '^[a-zA-Z]{3,4} ([0-9]|\s)?[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  k8s-msternode.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: apiserver
+      paths:
+        - /tmplog/data/kube-apiserver/kube-apiserver*\.log\.ERROR*
+        - /tmplog/data/kube-apiserver/kube-apiserver*\.log\.WARN*
+        - /tmplog/data/kube-apiserver/kube-apiserver*\.log\.INFO*
+      multiline.pattern: '^[A-Z]{1}[0-9]{4} [0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: controller-manager
+      paths:
+        - /tmplog/data/kube-controller-manager/kube-controller-manager*\.log\.ERROR*
+        - /tmplog/data/kube-controller-manager/kube-controller-manager*\.log\.WARN*
+        - /tmplog/data/kube-controller-manager/kube-controller-manager*\.log\.INFO*
+      multiline.pattern: '^[A-Z]{1}[0-9]{4} [0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: scheduler
+      paths:
+        - /tmplog/data/kube-scheduler/kube-scheduler*\.log\.ERROR*
+        - /tmplog/data/kube-scheduler/kube-scheduler*\.log\.WARN*
+        - /tmplog/data/kube-scheduler/kube-scheduler*\.log\.INFO*
+      multiline.pattern: '^[A-Z]{1}[0-9]{4} [0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+
+    - type: log
+      enabled: true
+      fields:
+        module: k8s
+        name: etcd
+      paths:
+        - /tmplog/data/etcd/etcd*.log
+      multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  mongodb.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: mongodb
+        name: log
+      paths:
+        - /tmplog/varlog/mongodb/mongod.log
+      multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+  rabbitmq.yml: |
+    - type: log
+      enabled: true
+      fields:
+        module: rabbitmq
+        name: log
+      paths:
+        - /tmplog/data/rabbitmq/rabbit*.log
+      multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-module-config
+  namespace: uimp-cloud
+  labels:
+    k8s-app: filebeat
+    kubernetes.io/cluster-service: "true"
+data:
+  system.yml: |-
+    - module: system
+      # Syslog
+      syslog:
+        enabled: true
+        var.paths:
+          - /tmplog/varlog/messages*
+          - /tmplog/varlog/syslog*
+      # Authorization logs
+      auth:
+        enabled: true
+        var.paths:
+          - /tmplog/varlog/auth.log*
+          - /tmplog/varlog/secure*
+  mysql.yml: |-
+    - module: mysql
+      # Error logs
+      error:
+        enabled: true
+        var.paths:
+          - /tmplog/varlog/mysql/error.log*
+          - /tmplog/varlog/mysql/mysqld.log*
+      # Slow logs
+      slowlog:
+        enabled: true
+        var.paths:
+          - /tmplog/varlog/mysql/mysql-slow.log*
+          - /tmplog/varlog/mysql/*-slow.log
+  nginx.yml: |-
+    - module: nginx
+      # Access logs
+      access:
+        enabled: true
+        var.paths:
+          - /tmplog/data/nginx/access.log
+      # Error logs
+      error:
+        enabled: true
+        var.paths:
+          - /tmplog/data/nginx/error.log
+
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: uimp-cloud
+  labels:
+    k8s-app: filebeat
+    kubernetes.io/cluster-service: "true"
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: filebeat
+        kubernetes.io/cluster-service: "true"
+    spec:
+      serviceAccountName: filebeat
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - operator: "Exists"
+      containers:
+      - name: filebeat
+        image: "{{BASE_IMAGE_URL}}/{{ filebeat_image }}"
+        args: [
+          "-c", "/etc/filebeat.yml",
+          "-e",
+        ]
+        env:
+        - name: LOGSTASH_HOST
+          value: logstash-service-linux
+        - name: LOGSTASH_PORT
+          value: "5044"
+        - name: ELASTICSEARCH_HOST
+          value: elasticsearch-service
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        - name: ELASTICSEARCH_USERNAME
+          value: elastic
+        - name: ELASTICSEARCH_PASSWORD
+          value: changeme
+        - name: ELASTIC_CLOUD_ID
+          value:
+        - name: ELASTIC_CLOUD_AUTH
+          value:
+        - name: NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        #filbeatconfig
+        - name: config
+          mountPath: /etc/filebeat.yml
+          readOnly: true
+          subPath: filebeat.yml
+        #moduleconfig
+        - name: module-config
+          mountPath: /usr/share/filebeat/modules.d
+          readOnly: true
+        #prospectors config
+        - name: prospectors
+          mountPath: /usr/share/filebeat/prospectors.d
+          readOnly: true
+        #log
+        - name: custom-data-log
+          mountPath: /tmplog/data
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+#        - name: es-log
+#          mountPath: /tmplog/elk/es
+#          readOnly: true
+#        - name: logstash-log
+#          mountPath: /tmplog/elk/logstash
+#          readOnly: true
+        - name: varlog-log
+          mountPath: /tmplog/varlog
+          readOnly: true
+        - name: localtime-volume
+          mountPath: /etc/localtime
+          readOnly: true
+      volumes:
+      #filbeatconfig
+      - name: config
+        configMap:
+          defaultMode: 0600
+          name: filebeat-config
+      #moduleconfig
+      - name: module-config
+        configMap:
+          name: filebeat-module-config
+          items:
+          - key: system.yml
+            path: system.yml
+          - key: mysql.yml
+            path: mysql.yml
+          - key: nginx.yml
+            path: nginx.yml
+      #docker logs
+      - name: varlibdockercontainers
+        hostPath:
+          path: /data/docker/containers
+      #prospectors config
+      - name: prospectors
+        configMap:
+          defaultMode: 0600
+          name: filebeat-prospectors
+      #log
+      - name: custom-data-log
+        hostPath:
+          path: /data/log
+#      - name: es-log
+#        hostPath:
+#          path: /data/es/logs
+#      - name: logstash-log
+#        hostPath:
+#          path: /data/logstash/logs
+      - name: varlog-log
+        hostPath:
+          path: /var/log
+      - name: localtime-volume
+        hostPath:
+          path: /etc/localtime
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+subjects:
+- kind: ServiceAccount
+  name: filebeat
+  namespace: uimp-cloud
+roleRef:
+  kind: ClusterRole
+  name: filebeat
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: filebeat
+  labels:
+    k8s-app: filebeat
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - namespaces
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+  namespace: uimp-cloud
+  labels:
+    k8s-app: filebeat

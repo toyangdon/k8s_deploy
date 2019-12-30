@@ -1,0 +1,118 @@
+node('test') {
+
+	//读取组件配置
+	def componentList=[];
+
+	//部署文件路径
+	DEPLOY_PROJECT_PATH="${WORKSPACE}/k8s_deploy";
+	
+	//组件部署文件源路径
+	COMPONENT_DEPLOY_SRC_PATH="deploy";
+	
+	environment {
+        ANSIBLE_ROLES_PATH = "${DEPLOY_PROJECT_PATH}/roles"
+    }
+
+	
+	
+	stage('拉取k8s部署文件') {
+	    if(CLEAN_FLAG == true){
+			cleanWs()
+		}
+		dir(DEPLOY_PROJECT_PATH){
+			git branch: "${BRANCH_NAME}", credentialsId: 'gitlab-pull-account', url: 'git@git.cs2025.com:uimpteam/k8s_deploy.git'
+		}
+	}
+	
+
+	stage('拉取组件部署文件'){
+		//读取组件配置文件
+		componentList = readYaml file: "${DEPLOY_PROJECT_PATH}/package/components.yml"
+		withCredentials([sshUserPrivateKey(credentialsId: 'gitlab-pull-account', keyFileVariable: 'keyFile', passphraseVariable: '', usernameVariable: 'username')]) {
+			sh 'chmod 400 ${keyFile}'
+		
+			def componentPullTasks=[:]
+			
+			for (c in componentList){
+				//需要单独定义一个变量，否则并发执行时，会频繁拉起同一个任务
+				def component=c;
+				componentPullTasks[component.name]= {
+					stage(component.name){
+						pullComponentDeployFile(component.name,component.projectUrl,component.branchName,component.destPath)					
+					}
+				}
+			}
+			parallel componentPullTasks
+		}
+	}
+	
+    stage('验证') {
+		if("${TEST_FLAG}" == "true"){
+		dir(DEPLOY_PROJECT_PATH){
+			ansiColor('xterm') {
+				def extraVars = new HashMap();
+				extraVars.base_dir=DEPLOY_PROJECT_PATH;
+				extraVars.load_images=false;
+				extraVars.push_images=false;
+				sh "cp package/hosts_for_check hosts_for_check"
+				ansiblePlaybook(
+					playbook: 'setup.yml',
+					inventory: "hosts_for_check",
+					credentialsId: 'ansible_ssh_key',
+					extras: '-C --ssh-common-args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"',
+					extraVars: extraVars,
+					colorized: true )
+				sh "rm -f hosts_for_check"
+				if( fileExists('setup.retry')){
+					sh "rm -f setup.retry"
+				}
+			}
+        }
+		}
+    }
+	
+	
+	stage('提交组件部署文件') {
+		if("${COMMIT_COMP_FLAG}" == "true"){
+		withCredentials([sshUserPrivateKey(credentialsId: 'gitlab-pull-account', keyFileVariable: 'keyFile', passphraseVariable: '', usernameVariable: 'username')]) {
+			sh 'chmod 400 ${keyFile}'
+			dir(DEPLOY_PROJECT_PATH){
+				try{
+					sh "git config core.sshCommand 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${keyFile} -F /dev/null'"
+					sh "git config user.email 'devops@chalco-steering.com'"
+					sh "git config user.name 'devops'"
+					sh "git add ."
+				try{
+					sh "git commit -a -m 'jenkins 更新组件配置'"
+					sh "git push --set-upstream origin feature/Feature-structure-reorg"
+				}catch(exc){
+					//TO_DO 提交失败
+				}
+				}finally{
+					sh "git config --unset core.sshCommand"
+				}
+			}
+		}
+		}
+    }
+	
+}
+
+def pullComponentDeployFile(componentName,projectUrl,branchName,destPath){
+	sh "rm -rf ${componentName}"
+	sh "git init ${componentName}"
+	dir("${componentName}"){
+		//拉取项目下的deploy目录
+		sh "git config core.sshCommand 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${keyFile} -F /dev/null'"
+		sh 'git config core.sparsecheckout true'
+		sh "git remote add -f -t ${branchName} origin ${projectUrl}" 
+		writeFile file: ".git/info/sparse-checkout", text: "${COMPONENT_DEPLOY_SRC_PATH}/"
+		try{
+			sh 'git pull origin ${branchName}'
+		}catch(exc){
+			error "拉取组件（${componentName}）部署文件失败"
+		}
+		sh "rm -rf ${DEPLOY_PROJECT_PATH}/${destPath}/*"
+		sh "cp -rf ${COMPONENT_DEPLOY_SRC_PATH}/* ${DEPLOY_PROJECT_PATH}/${destPath}/"
+	}
+}

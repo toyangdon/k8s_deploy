@@ -1,0 +1,7 @@
+# [可选]多master部署时的负载均衡配置
+- hosts: lb
+  gather_facts: yes
+
+- hosts: lb
+  roles:
+  - kubernetes/lb

@@ -1,0 +1,7 @@
+- import_playbook: 01.es.yml
+
+- import_playbook: 02.logstash.yml
+
+- import_playbook: 03.filebeat.yml
+
+- import_playbook: 04.kibana.yml

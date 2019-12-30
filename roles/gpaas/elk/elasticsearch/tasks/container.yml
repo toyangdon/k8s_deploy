@@ -1,0 +1,24 @@
+- name: 获取数据目录空间
+  shell: 'mount_size=`df -m --output=size,target {{es_data_path}}|tail -1|cut -d" " -f1`;mount_name=`df -m --output=size,target /data/es|tail -1|cut -d" " -f1`;if [ "$mount_name" == "/data/es" ];then echo `expr $mount_size / 2`Mi;else echo ${mount_size}Mi ; fi'
+  register: es_storage_capacity_query
+
+- name: 创建es-statefulset.yaml文件
+  template: src=es-statefulset.yaml dest={{ base_dir }}/manifests/es-statefulset.yaml
+  delegate_to: localhost
+  run_once: true
+  when: not ansible_check_mode
+  
+- name: 部署es-statefulset
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/es-statefulset.yaml"
+  delegate_to: localhost
+  run_once: true
+  
+- name: 创建es-indices-cleanup.yaml文件
+  template: src=es-indices-cleanup.yaml dest={{ base_dir }}/manifests/es-indices-cleanup.yaml
+  delegate_to: localhost
+  run_once: true
+  
+- name: 部署es-index-clean-job
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/es-indices-cleanup.yaml"
+  delegate_to: localhost
+  run_once: true

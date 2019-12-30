@@ -1,0 +1,8 @@
+cs_dashboard_fontend_image: prod/zlst-nuxt:1.6.0
+cs_dashboard_fontend_ingress: >-
+  cloud.{{cs_dashboard_ingress_top_domain_name}}
+
+cs_fontend_cpu_requests:  100m
+cs_fontend_cpu_limit: 200m
+cs_fontend_mem_requests: 200Mi
+cs_fontend_mem_limit: 500Mi

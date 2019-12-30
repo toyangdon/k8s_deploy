@@ -1,0 +1,17 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: gluster-heketi
+  namespace: kube-system
+  annotations: 
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/glusterfs
+parameters:
+  resturl: "http://{{ groups['kube-storage-node'][0] }}:26060"
+  restauthenabled: "false"
+{% if groups['kube-storage-node']|length == 1 %}
+  volumetype: none
+{% else %}
+  volumetype: replicate:{{ groups['kube-storage-node']|length }}
+{% endif %}

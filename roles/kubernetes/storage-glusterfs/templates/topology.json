@@ -1,0 +1,26 @@
+{
+  "clusters": [
+	{
+	  "nodes": [
+	  {% for node in groups['kube-storage-node'] %}
+		{
+		  "node": {
+			"hostnames": {
+			  "manage": [
+				"{{ hostvars[node]['NODE_ID']}}"
+			  ],
+			  "storage": [
+				"{{ node}}"
+			  ]
+			},
+			"zone": 1
+		  },
+		  "devices": [
+			"{{gfs_device}}"
+		  ]
+		}{% if not loop.last %},{% endif %}
+		{% endfor %}
+	  ]
+	}
+  ]
+}

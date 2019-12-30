@@ -1,0 +1,11 @@
+# 区分多个instance的VRRP组播，同网段不能重复，取值在0-255之间
+VIRTUAL_ROUTER_ID: >-
+  {{MASTER_IP.split('.')[3]}}
+  
+#lb节点部署方式 process/container
+lb_type: container
+
+LB_ROLE: >-
+  {%- if groups["lb"][0] == inventory_hostname -%}master
+  {%- else -%}backup
+  {%- endif -%}

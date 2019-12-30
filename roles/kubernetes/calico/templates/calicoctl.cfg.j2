@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: calicoApiConfig
+metadata:
+spec:
+  datastoreType: "etcdv2"
+  etcdEndpoints: {% for node in groups['kube-master'] %}https://{{ node }}:2379{%- if not loop.last -%},{%- endif -%}{% endfor %}
+  
+  etcdKeyFile: /etc/calico/ssl/calico-key.pem
+  etcdCertFile: /etc/calico/ssl/calico.pem
+  etcdCACertFile: /etc/calico/ssl/ca.pem

@@ -1,0 +1,7 @@
+#节点角色
+node_role: >-
+  {%-if "harbor" in group_names -%}lb
+  {%-elif "lb" in group_names -%}lb
+  {%-elif "kube-master" in group_names -%}master
+  {%-else-%}compute
+  {%-endif-%}

@@ -1,0 +1,44 @@
+- name: 创建glusterfs配置文件相关目录./manifests/glusterfs state=directory
+  file: name={{ base_dir }}/manifests/glusterfs state=directory
+
+- name: 创建 glusterfs-daemonset.yaml文件
+  template: src={{base_dir}}/roles/kubernetes/storage-glusterfs/templates/glusterfs-daemonset.yaml dest={{ base_dir }}/manifests/glusterfs/glusterfs-daemonset.yaml
+  
+- name: 创建 heketi-desployment.yaml文件
+  template: src={{base_dir}}/roles/kubernetes/storage-glusterfs/templates/heketi-desployment.yaml dest={{ base_dir }}/manifests/glusterfs/heketi-desployment.yaml
+  
+- name: 创建 gluster-storageclass.yaml文件
+  template: src={{base_dir}}/roles/kubernetes/storage-glusterfs/templates/gluster-storageclass.yaml dest={{ base_dir }}/manifests/glusterfs/gluster-storageclass.yaml
+  
+- name: 创建 topology.json文件
+  template: src={{base_dir}}/roles/kubernetes/storage-glusterfs/templates/topology.json dest={{ base_dir }}/manifests/glusterfs/topology.json
+  
+- name: 部署 glusterfs-daemonset.yaml
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/glusterfs/glusterfs-daemonset.yaml"
+  
+- name: 部署 heketi-desployment.yaml
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/glusterfs/heketi-desployment.yaml"
+  
+- name: 部署 gluster-storageclass.yaml
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/glusterfs/gluster-storageclass.yaml"
+  ignore_errors: true
+  
+- name: 等待hekiti启动
+  shell: curl http://{{ groups['kube-storage-node'][0] }}:26060/hello
+  register: hekiti_status
+  until: 'hekiti_status.stdout == "Hello from Heketi"'
+  retries: 40
+  delay: 5
+  when: not ansible_check_mode
+
+- name: 等待gfs启动
+  shell: sleep 20;
+  when: not ansible_check_mode
+  
+- name: 配置glusterfs集群 
+  shell: heketi_pod=`{{bin_dir}}/kubectl get pods -l "glusterfs=heketi-pod" -n kube-system -o jsonpath='{.items[0].metadata.name}'`&& {{bin_dir}}/kubectl cp {{ base_dir }}/manifests/glusterfs/topology.json ${heketi_pod}:/topology.json -n kube-system && {{bin_dir}}/kubectl exec -n kube-system ${heketi_pod} -- heketi-cli topology load --json=/topology.json
+  register: hekiti_config_result
+  until: '"Unable" not in hekiti_config_result.stdout'
+  retries: 10
+  delay: 5
+  when: not ansible_check_mode

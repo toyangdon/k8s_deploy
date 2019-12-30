@@ -1,0 +1,14 @@
+#- name: Add the group 'elasticsearch'
+#  group: name=elasticsearch
+#
+#- name: Add the user 'elasticsearch'
+#  user:
+#    name: elasticsearch
+#    comment: elasticsearch
+#    group: elasticsearch
+
+- name: 创建日志目录
+  file: name=/data/logstash/logs state=directory  mode=0755 owner=1000 group=1000 recurse=yes
+
+- include_tasks : container.yml
+  when: logstash_type == "container"

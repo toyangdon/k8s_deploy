@@ -1,0 +1,9 @@
+node_labels: >-
+  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node-role.kubernetes.io/kube-compute-node=true
+  
+node_taints: >-
+  {%- if NODE_TAINTS is defined -%}{{NODE_TAINTS}}{%- endif -%}
+  
+#默认主机名，要求唯一，默认规则：主机组名-主机ip最后一段 ，如果hosts文件中不是配置的ip(有可能是域名)，那么就直接取域名
+NODE_ID: >-
+  kube-compute-node-{{inventory_hostname.split('.')[3]}}

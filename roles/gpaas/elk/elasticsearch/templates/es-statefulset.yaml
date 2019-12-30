@@ -1,0 +1,291 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-config
+  namespace: uimp-cloud
+data:
+  elasticsearch.yml: |
+      path.data: {{es_data_path}}/data
+      path.logs: {{es_data_path}}/logs
+      #http.host: 0.0.0.0
+      http.cors.enabled: true
+      http.cors.allow-origin: "*"
+      network.host: 0.0.0.0
+      node.name: ${HOSTNAME}
+      #xpack setting
+      action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*,*
+      xpack.security.enabled: false
+      xpack.license.self_generated.type: basic
+{% if groups['elasticsearch']|length > 1 %}
+      discovery.zen.ping.unicast.hosts: [{%- for node in groups['elasticsearch'] -%}"{{node}}"{% if not loop.last %},{% endif %}{%- endfor -%}]
+      discovery.zen.minimum_master_nodes: {{(groups['elasticsearch']|length) // 2 + 1}}
+      discovery.zen.ping_timeout: 5s
+      cluster.name: elasticsearch
+{% endif %}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-log4j
+  namespace: uimp-cloud
+data:
+  log4j2.properties: |
+      status = error
+      # log action execution errors for easier debugging
+      logger.action.name = org.elasticsearch.action
+      logger.action.level = debug
+
+      appender.console.type = Console
+      appender.console.name = console
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%m%n
+
+      appender.rolling.type = RollingFile
+      appender.rolling.name = rolling
+      appender.rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}.log
+      appender.rolling.layout.type = PatternLayout
+      appender.rolling.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%.-10000m%n
+      appender.rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}-%d{yyyy-MM-dd}-%i.log.gz
+      appender.rolling.policies.type = Policies
+      appender.rolling.policies.time.type = TimeBasedTriggeringPolicy
+      appender.rolling.policies.time.interval = 1
+      appender.rolling.policies.time.modulate = true
+      appender.rolling.policies.size.type = SizeBasedTriggeringPolicy
+      appender.rolling.policies.size.size = 128MB
+      #appender.rolling.strategy.type = DefaultRolloverStrategy
+      #appender.rolling.strategy.fileIndex = nomax
+      #appender.rolling.strategy.action.type = Delete
+      #appender.rolling.strategy.action.basepath = ${sys:es.logs.base_path}
+      #appender.rolling.strategy.action.condition.type = IfFileName
+      #appender.rolling.strategy.action.condition.glob = ${sys:es.logs.cluster_name}-*
+      #appender.rolling.strategy.action.condition.nested_condition.type = IfAccumulatedFileSize
+      #appender.rolling.strategy.action.condition.nested_condition.exceeds = 2GB
+      appender.rolling.strategy.type = DefaultRolloverStrategy
+      appender.rolling.strategy.action.type = Delete
+      appender.rolling.strategy.action.basepath = ${sys:es.logs.base_path}
+      appender.rolling.strategy.action.condition.type = IfFileName
+      appender.rolling.strategy.action.condition.glob = ${sys:es.logs.cluster_name}-*
+      appender.rolling.strategy.action.condition.nested_condition.type = IfLastModified
+      appender.rolling.strategy.action.condition.nested_condition.age = 3D
+
+      rootLogger.level = info
+      rootLogger.appenderRef.console.ref = console
+      rootLogger.appenderRef.rolling.ref = rolling
+
+      appender.deprecation_rolling.type = RollingFile
+      appender.deprecation_rolling.name = deprecation_rolling
+      appender.deprecation_rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_deprecation.log
+      appender.deprecation_rolling.layout.type = PatternLayout
+      appender.deprecation_rolling.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%.-10000m%n
+      appender.deprecation_rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_deprecation-%i.log.gz
+      appender.deprecation_rolling.policies.type = Policies
+      appender.deprecation_rolling.policies.size.type = SizeBasedTriggeringPolicy
+      appender.deprecation_rolling.policies.size.size = 1GB
+      appender.deprecation_rolling.strategy.type = DefaultRolloverStrategy
+      appender.deprecation_rolling.strategy.max = 4
+
+      logger.deprecation.name = org.elasticsearch.deprecation
+      logger.deprecation.level = warn
+      logger.deprecation.appenderRef.deprecation_rolling.ref = deprecation_rolling
+      logger.deprecation.additivity = false
+
+      appender.index_search_slowlog_rolling.type = RollingFile
+      appender.index_search_slowlog_rolling.name = index_search_slowlog_rolling
+      appender.index_search_slowlog_rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_index_search_slowlog.log
+      appender.index_search_slowlog_rolling.layout.type = PatternLayout
+      appender.index_search_slowlog_rolling.layout.pattern = [%d{ISO8601}][%-5p][%-25c] %marker%.-10000m%n
+      appender.index_search_slowlog_rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_index_search_slowlog-%d{yyyy-MM-dd}.log
+      appender.index_search_slowlog_rolling.policies.type = Policies
+      appender.index_search_slowlog_rolling.policies.time.type = TimeBasedTriggeringPolicy
+      appender.index_search_slowlog_rolling.policies.time.interval = 1
+      appender.index_search_slowlog_rolling.policies.time.modulate = true
+
+      logger.index_search_slowlog_rolling.name = index.search.slowlog
+      logger.index_search_slowlog_rolling.level = trace
+      logger.index_search_slowlog_rolling.appenderRef.index_search_slowlog_rolling.ref = index_search_slowlog_rolling
+      logger.index_search_slowlog_rolling.additivity = false
+
+      appender.index_indexing_slowlog_rolling.type = RollingFile
+      appender.index_indexing_slowlog_rolling.name = index_indexing_slowlog_rolling
+      appender.index_indexing_slowlog_rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_index_indexing_slowlog.log
+      appender.index_indexing_slowlog_rolling.layout.type = PatternLayout
+      appender.index_indexing_slowlog_rolling.layout.pattern = [%d{ISO8601}][%-5p][%-25c] %marker%.-10000m%n
+      appender.index_indexing_slowlog_rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_index_indexing_slowlog-%d{yyyy-MM-dd}.log
+      appender.index_indexing_slowlog_rolling.policies.type = Policies
+      appender.index_indexing_slowlog_rolling.policies.time.type = TimeBasedTriggeringPolicy
+      appender.index_indexing_slowlog_rolling.policies.time.interval = 1
+      appender.index_indexing_slowlog_rolling.policies.time.modulate = true
+
+      logger.index_indexing_slowlog.name = index.indexing.slowlog.index
+      logger.index_indexing_slowlog.level = trace
+      logger.index_indexing_slowlog.appenderRef.index_indexing_slowlog_rolling.ref = index_indexing_slowlog_rolling
+      logger.index_indexing_slowlog.additivity = false
+
+---
+---
+# https://raw.githubusercontent.com/kubernetes/kubernetes/v1.10.2/cluster/addons/fluentd-elasticsearch/es-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: uimp-cloud
+  labels:
+    k8s-app: elasticsearch
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  serviceName: elasticsearch
+  replicas: {{groups['elasticsearch']|length}}
+  selector:
+    matchLabels:
+      k8s-app: elasticsearch
+  template:
+    metadata:
+      labels:
+        k8s-app: elasticsearch
+        kubernetes.io/cluster-service: "true"
+    spec: 
+      hostNetwork: true
+      tolerations:
+{% for taint in node_taints.split(",") %}
+      - operator: "Exists"
+        effect: "NoSchedule"
+        key: {{taint|replace("=:NoSchedule","")}}
+{% endfor %}
+      nodeSelector:
+        "node-role.kubernetes.io/elasticsearch": "true"
+      affinity:
+#        nodeAffinity:
+#        requiredDuringSchedulingIgnoredDuringExecution:
+#         nodeSelectorTerms:
+#          - matchExpressions:
+#            - key: node-role.kubernetes.io/es
+#              operator: Exists
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution: 
+          - labelSelector:
+              matchExpressions:
+              - key: k8s-app
+                operator: In
+                values: 
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: "{{BASE_IMAGE_URL}}/{{ elasticsearch_image }}"
+        name: elasticsearch
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: {{ es_cpu_limit }}
+            memory: "{{ es_mem_limit }}"
+          requests:
+            cpu: {{ es_cpu_requests }}
+            memory: "{{ es_mem_requests }}"
+        ports:
+        - containerPort: 9200
+          name: db
+          protocol: TCP
+        - containerPort: 9300
+          name: transport
+          protocol: TCP
+        volumeMounts:
+        - name: es-config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+        - name: es-log4j
+          mountPath: /usr/share/elasticsearch/config/log4j2.properties
+          subPath: log4j2.properties
+        - name: es-persistent-storage
+          mountPath: /data/es
+        env:
+        - name: "NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: "ES_JAVA_OPTS"
+          value: "{{es_jvm_xms_size}} {{es_jvm_xmx_size}}"
+        securityContext:
+            privileged: true
+      volumes:
+      - name: es-config
+        configMap:
+          name: es-config
+          items:
+          - key: elasticsearch.yml
+            path: elasticsearch.yml
+      - name: es-log4j
+        configMap:
+          name: es-log4j
+          items:
+          - key: log4j2.properties
+            path: log4j2.properties
+#      initContainers:
+#      - image: alpine:3.6
+#        command: ["/sbin/sysctl", "-w", "vm.max_map_count=262144"]
+#        name: elasticsearch-init
+#        securityContext:
+#          privileged: true
+  volumeClaimTemplates:
+  - metadata:
+      name: es-persistent-storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+{% if es_storage_capacity == 'auto' %}
+          storage: {{es_storage_capacity_query.stdout}}
+{% else %}
+          storage: {{es_storage_capacity}}
+{% endif %}
+      storageClassName: local-storage
+      
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: elasticsearch-service
+  name: elasticsearch-service
+  namespace: uimp-cloud
+spec:
+  ports:
+    - port: 9200
+      name: db
+      targetPort: 9200
+    - port: 9300
+      name: transport
+      targetPort: 9300
+  selector:
+    k8s-app: elasticsearch
+
+---
+{% for node in groups['elasticsearch'] %}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-persistent-storage-{{hostvars[node].NODE_ID}}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+{% if es_storage_capacity == 'auto' %}
+    storage: {{es_storage_capacity_query.stdout}}
+{% else %}
+    storage: {{es_storage_capacity}}
+{% endif %}
+  local:
+    path: {{es_data_path}}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - "{{hostvars[node].NODE_ID}}"
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+{% endfor %}

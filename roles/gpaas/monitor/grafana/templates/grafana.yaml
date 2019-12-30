@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - env:
+        - name: GF_AUTH_PROXY_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: Admin
+        image: {{BASE_IMAGE_URL}}/{{ grafana_image }}
+        name: grafana-container
+        ports:
+        - containerPort: 8080
+          name: port-1
+          protocol: TCP
+        resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 500Mi
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          name: grafana-volume
+      volumes:
+      - name: grafana-volume
+        persistentVolumeClaim:
+          claimName: grafana
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: uimp-cloud
+spec:
+  ports:
+  - name: port-0
+    port: 8080
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: grafana
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana
+  namespace: uimp-cloud
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi 
+      storage: 1Gi 

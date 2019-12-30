@@ -1,0 +1,28 @@
+global_defs {
+    router_id lb-master
+}
+
+vrrp_script check-haproxy {
+    script "docker ps |grep -v pause|grep haproxy"
+    interval 5
+    weight -30
+}
+
+vrrp_instance VI-kube-master {
+    state MASTER
+    priority 120
+    dont_track_primary
+{% if LB_IF is defined %}
+    interface {{ LB_IF }}
+{% else %}
+    interface {{ LB_IF_QUERY.stdout}}
+{% endif %}
+    virtual_router_id {{ VIRTUAL_ROUTER_ID }}
+    advert_int 3
+    track_script {
+        check-haproxy
+    }
+    virtual_ipaddress {
+        {{ MASTER_IP }}
+    }
+}

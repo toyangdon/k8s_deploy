@@ -1,0 +1,10 @@
+applog 3
+filebeat 3
+metricbeat 3
+elasticsearch 3
+gfs 3
+harbor 3
+k8s 3
+mongodb 3
+rabbitmq 3
+zipkin 3

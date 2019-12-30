@@ -1,0 +1,25 @@
+- name: 创建kibana.yaml文件
+  template: src=kibana.yaml dest={{ base_dir }}/manifests/kibana.yaml
+  ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: 部署kibana
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kibana.yaml"
+  ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: 导入kibana dashboards.json文件（如果超时，请手动去执行）
+  shell: "curl -XPOST 'http://{{MASTER_IP}}:5601/api/kibana/dashboards/import?force=true' -H 'Content-Type: application/json' -H 'kbn-xsrf: reporting' -d @{{ base_dir }}/roles/elk/kibana/files/dashboards.json -m 10 -o /dev/null -s -w %{http_code}"
+  register: kibana_result
+  until: '"200" == kibana_result.stdout'
+  retries: 60
+  delay: 15
+  ignore_errors: true
+  when: not ansible_check_mode
+  
+- name: 导入kibana filebeat.json文件（如果超时，请手动去执行）
+  shell: "curl -XPOST 'http://{{MASTER_IP}}:5601/api/kibana/dashboards/import?force=true' -H 'Content-Type: application/json' -H 'kbn-xsrf: reporting' -d @{{ base_dir }}/roles/elk/kibana/files/filebeat.json -m 10 -o /dev/null -s -w %{http_code}"
+  register: kibana_result1
+  until: '"200" == kibana_result1.stdout'
+  retries: 60
+  delay: 15
+  ignore_errors: true
+  when: not ansible_check_mode

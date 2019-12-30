@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ""
+  labels:
+    component: keepalived
+    tier: control-plane
+  name: keepalived
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers :
+  - name: keepalived
+    image: {{BASE_IMAGE_URL}}/{{keepalived_image}}
+    resources:
+      requests:
+        cpu: {{ keepalived_cpu_requests }}
+        memory: {{ keepalived_mem_requests }}
+      limits:
+        cpu: {{ keepalived_cpu_limit }}
+        memory: {{ keepalived_mem_limit }}
+    volumeMounts:
+    - mountPath: /etc/keepalived
+      name: config
+      readOnly: true
+    - mountPath: /var/run/docker.sock
+      name: docker-sock
+    - mountPath: /bin/docker
+      name: docker
+    securityContext:
+      privileged: true
+  priorityClassName: system-cluster-critical
+  volumes:
+  - hostPath:
+      path: /etc/keepalived
+    name: config
+  - hostPath:
+      path: /var/run/docker.sock
+    name: docker-sock
+  - hostPath:
+      path: /opt/k8s/bin/docker
+    name: docker

@@ -1,0 +1,50 @@
+- name: 创建镜像打包文件目录
+  file: name=/data/tmp/images state=directory
+  when: load_images == true
+  
+- name: 复制镜像打包文件
+  with_items:
+  - images_list
+  - "{{ images_file_name }}"
+  copy: src={{images_src_path}}/{{item}} dest={{images_path}}/{{item}}
+  when: load_images == true
+
+- name: 导入需镜像到本地
+  shell: "{{ bin_dir }}/docker load -i {{images_file}}"
+  when: load_images == true
+
+- block:  
+  - name: 复制应用商店或者业务镜像
+    copy: src={{images_src_path}}/{{app_images_file_name}} dest={{images_path}}/{{app_images_file_name}}
+  - name: 导入应用商店或者业务镜像到本地
+    shell: "{{ bin_dir }}/docker load -i {{images_path}}/{{app_images_file_name}}"
+  when: app_images_file_name is defined and app_images_file_name != "" and load_images == true
+  
+- name: 修改镜像tag
+  shell: "for image in `cat {{images_path}}/images_list`;do {{bin_dir}}/docker tag $image {{BASE_IMAGE_URL}}/$image;done"
+  when: load_images == true
+    
+- name: 创建kubelet静态pod文件目录
+  file: name=/etc/kubernetes/manifests state=directory
+
+- name: 创建harbor配置文件目录
+  file: name=/data/harbor state=directory
+
+- name: 创建harbor yml文件
+  template: src=harbor.yml dest=/etc/kubernetes/manifests/harbor.yml
+  when: harbor_deploy_type in ["single-stand-alone","single-coexistence"]
+
+- name: 复制harbor 文件
+  with_items:
+  - adminserver
+  - nginx
+  - registry
+  - ui
+  copy: src={{ item }} dest=/data/harbor
+  
+- name: 创建harbor registry 配置文件
+  template: src=registry/config/config.yml dest=/data/harbor/registry/config/config.yml
+  
+- fail: 
+    msg: "暂时不支持集群模式"
+  when: harbor_deploy_type not in ["single-stand-alone","single-coexistence"]

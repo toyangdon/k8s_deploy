@@ -1,0 +1,253 @@
+---
+apiVersion: v1
+data:
+  VPN.SERVERNAME.COM.crt: "Certificate:\n    Data:\n        Version: 3 (0x2)\n        Serial
+    Number: 1 (0x1)\n    Signature Algorithm: sha256WithRSAEncryption\n        Issuer:
+    CN=Easy-RSA CA\n        Validity\n            Not Before: Sep 18 08:32:08 2017
+    GMT\n            Not After : Sep 16 08:32:08 2027 GMT\n        Subject: CN=VPN.SERVERNAME.COM\n
+    \       Subject Public Key Info:\n            Public Key Algorithm: rsaEncryption\n
+    \               Public-Key: (2048 bit)\n                Modulus:\n                    00:ce:b7:63:6e:8c:ac:9b:83:37:20:a1:d8:59:6f:\n
+    \                   62:03:4a:fb:9d:56:c9:9c:38:f2:b5:33:30:20:ff:\n                    82:7f:bf:69:af:a6:99:74:cc:28:55:bf:44:95:a1:\n
+    \                   b7:6f:08:25:01:8c:53:22:62:00:c2:8f:4f:95:89:\n                    00:ae:6b:07:d6:eb:83:b7:7f:82:0b:0f:82:f2:ad:\n
+    \                   71:e3:7c:3a:f8:b1:39:24:ad:c7:f6:e3:b3:f2:21:\n                    54:90:91:f0:07:26:7a:b2:a0:25:ca:a8:d5:b1:c6:\n
+    \                   eb:34:91:31:24:83:84:c4:b7:9f:f6:91:d1:72:b4:\n                    69:c1:cf:8e:8d:23:d4:01:af:72:75:cc:5b:10:61:\n
+    \                   a6:2b:4f:f6:7a:10:3d:89:2c:a5:92:65:5d:c1:e0:\n                    c5:f0:6b:fc:8e:7b:d0:1c:c1:9a:02:e4:66:1f:21:\n
+    \                   11:b8:e1:26:cb:83:04:58:89:2c:3d:04:8e:05:8c:\n                    32:a2:18:7b:c2:d5:ec:9a:85:42:d0:8e:a2:b4:ff:\n
+    \                   45:55:03:50:c4:e1:1e:c9:77:6d:80:56:10:52:17:\n                    d5:c8:10:8a:93:50:4c:a1:49:74:55:97:2e:35:cc:\n
+    \                   51:fd:f7:81:a0:db:9c:a0:fd:5b:7b:3f:b6:4f:1c:\n                    11:73:e8:d3:bb:cc:fe:ea:41:ea:2f:98:1a:e1:79:\n
+    \                   99:3f\n                Exponent: 65537 (0x10001)\n        X509v3
+    extensions:\n            X509v3 Basic Constraints: \n                CA:FALSE\n
+    \           X509v3 Subject Key Identifier: \n                D7:84:50:0E:4C:AC:4D:31:82:79:9E:B4:F1:02:9F:08:B5:6E:BA:4A\n
+    \           X509v3 Authority Key Identifier: \n                keyid:F3:77:AD:D7:27:1E:47:D2:C9:4B:5D:F0:D3:9F:90:76:18:3A:84:70\n
+    \               DirName:/CN=Easy-RSA CA\n                serial:B8:8F:08:51:CB:16:13:4F\n\n
+    \           X509v3 Extended Key Usage: \n                TLS Web Server Authentication\n
+    \           X509v3 Key Usage: \n                Digital Signature, Key Encipherment\n
+    \   Signature Algorithm: sha256WithRSAEncryption\n         a3:ff:a5:19:9f:e2:69:ba:2c:89:6e:15:4b:e3:aa:c0:3d:79:\n
+    \        28:e4:dd:6a:e0:9a:8e:73:c6:aa:8a:91:b8:b4:26:1b:08:8a:\n         78:26:10:5e:e6:8d:20:8c:01:2c:f1:69:d3:80:51:d3:79:68:\n
+    \        15:aa:9f:5c:c0:8b:92:03:88:f8:9c:ce:05:ea:cd:fb:74:33:\n         36:f7:b6:07:a0:bf:57:43:61:6e:42:f3:3a:a4:e4:b9:d8:e1:\n
+    \        9c:02:77:0a:4e:83:ed:a3:73:3b:c9:78:f8:79:5d:29:4d:c5:\n         08:5e:e6:5a:64:f7:de:19:75:a1:3e:aa:47:ae:b8:9c:70:cf:\n
+    \        d5:88:52:ff:70:b5:c7:89:03:19:ce:0b:1b:ee:f2:49:e1:21:\n         36:52:d2:e1:21:8f:a6:52:fd:62:54:a4:97:80:45:90:ce:06:\n
+    \        70:d7:34:43:d0:ff:7a:37:03:f3:08:b7:df:08:6a:00:ee:51:\n         3e:3c:52:b2:f0:f7:1c:80:cb:ff:f3:fd:8e:1e:a3:aa:9d:30:\n
+    \        12:7b:55:09:81:7b:66:db:99:29:a1:7e:2e:13:5c:7d:db:a6:\n         0a:34:a0:66:f2:9c:b8:86:af:11:9e:1a:46:ab:c5:60:b4:85:\n
+    \        9c:db:7e:8b:98:32:69:cf:25:2d:fe:9f:e6:ca:5e:42:4d:1f:\n         56:a8:9c:43\n-----BEGIN
+    CERTIFICATE-----\nMIIDRjCCAi6gAwIBAgIBATANBgkqhkiG9w0BAQsFADAWMRQwEgYDVQQDDAtFYXN5\nLVJTQSBDQTAeFw0xNzA5MTgwODMyMDhaFw0yNzA5MTYwODMyMDhaMB0xGzAZBgNV\nBAMMElZQTi5TRVJWRVJOQU1FLkNPTTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC\nAQoCggEBAM63Y26MrJuDNyCh2FlvYgNK+51WyZw48rUzMCD/gn+/aa+mmXTMKFW/\nRJWht28IJQGMUyJiAMKPT5WJAK5rB9brg7d/ggsPgvKtceN8OvixOSStx/bjs/Ih\nVJCR8AcmerKgJcqo1bHG6zSRMSSDhMS3n/aR0XK0acHPjo0j1AGvcnXMWxBhpitP\n9noQPYkspZJlXcHgxfBr/I570BzBmgLkZh8hEbjhJsuDBFiJLD0EjgWMMqIYe8LV\n7JqFQtCOorT/RVUDUMThHsl3bYBWEFIX1cgQipNQTKFJdFWXLjXMUf33gaDbnKD9\nW3s/tk8cEXPo07vM/upB6i+YGuF5mT8CAwEAAaOBlzCBlDAJBgNVHRMEAjAAMB0G\nA1UdDgQWBBTXhFAOTKxNMYJ5nrTxAp8ItW66SjBGBgNVHSMEPzA9gBTzd63XJx5H\n0slLXfDTn5B2GDqEcKEapBgwFjEUMBIGA1UEAwwLRWFzeS1SU0EgQ0GCCQC4jwhR\nyxYTTzATBgNVHSUEDDAKBggrBgEFBQcDATALBgNVHQ8EBAMCBaAwDQYJKoZIhvcN\nAQELBQADggEBAKP/pRmf4mm6LIluFUvjqsA9eSjk3Wrgmo5zxqqKkbi0JhsIingm\nEF7mjSCMASzxadOAUdN5aBWqn1zAi5IDiPiczgXqzft0Mzb3tgegv1dDYW5C8zqk\n5LnY4ZwCdwpOg+2jczvJePh5XSlNxQhe5lpk994ZdaE+qkeuuJxwz9WIUv9wtceJ\nAxnOCxvu8knhITZS0uEhj6ZS/WJUpJeARZDOBnDXNEPQ/3o3A/MIt98IagDuUT48\nUrLw9xyAy//z/Y4eo6qdMBJ7VQmBe2bbmSmhfi4TXH3bpgo0oGbynLiGrxGeGkar\nxWC0hZzbfouYMmnPJS3+n+bKXkJNH1aonEM=\n-----END
+    CERTIFICATE-----\n"
+  VPN.SERVERNAME.COM.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDOt2NujKybgzcg
+    odhZb2IDSvudVsmcOPK1MzAg/4J/v2mvppl0zChVv0SVobdvCCUBjFMiYgDCj0+V
+    iQCuawfW64O3f4ILD4LyrXHjfDr4sTkkrcf247PyIVSQkfAHJnqyoCXKqNWxxus0
+    kTEkg4TEt5/2kdFytGnBz46NI9QBr3J1zFsQYaYrT/Z6ED2JLKWSZV3B4MXwa/yO
+    e9AcwZoC5GYfIRG44SbLgwRYiSw9BI4FjDKiGHvC1eyahULQjqK0/0VVA1DE4R7J
+    d22AVhBSF9XIEIqTUEyhSXRVly41zFH994Gg25yg/Vt7P7ZPHBFz6NO7zP7qQeov
+    mBrheZk/AgMBAAECggEANKpiadLrUv+eNvElBrwq833SFyb6XJPhuiqdc3rFi7h/
+    u6GtbSVqjVYaqii2bFJd40QWFidz3B3Y/9cU1lssdyQvvbt9rUW5bgykfHm1KJE2
+    ZtLjpFIlEWZOfjrANYInNoU4u6ZCM3XjjNQE+jGLzPafiZljDF9MpnUz81+Sbw8H
+    XuPYpxF+NzHaRxe5TO54Scbn/a78LqKWBvBfexZF+eW8yq6cpQELfxV86osG+1cQ
+    Ln+lu08dUWCBYD+oYK1WJBmN0L6c41URLhVQJlPcJw59bJKblS5WBNstgwXs/nBd
+    1F/ExmZHmH7vHxUq9302m4YMLSibSl1qZ/nL4btpcQKBgQD7yzS1sRF2682EKie1
+    Zzxy+SGUsNwS64OlcYZrZjlSv9PlNkC5sbXgdie9uNTHJDjH9n+/ZBBtaSQIOEHZ
+    /LXriyB5K+4h5YbO7FTP5A3mkjbE5NDho0H2HJbKiBfnQikm5OIv7g0QypkhzemS
+    PH15YWntj4ch70f7X/ttnsnzpwKBgQDSK2jIZGLLGocJ9nX6ypBuFVwbDbEQlNlN
+    /3AqmOoci0xhUbIY5XVh5gfK6J/+w8tOQrCTo8Mk3Z1tdOA/SamqAH5gEIt50Qxy
+    no6wIxy4SxWxlRm51kDaqakbErrvH7YtEIDjB2C49pibCSAURUYkReD7rkMBKiCD
+    DQ9ZBJJAqQKBgQCcfSeuQHVFPrpFCNoTAS1tm26GdgDg9WSlP1A2kZrQ1g4Ap95E
+    SrFp5qU+YZBEkDuF86pjrfITvcO6JBSxQUFjOd2d0XK3uGo3UmRHrEoDYh4N8tPr
+    WEbXid8h0sFgZhsjZB87gKy4IeJYQxyGWXf2J1fpYEmxCoDnNzkRYR3MgwKBgQC5
+    k3L2Xw2M4WOTvHf4dpyJV3r4uGI8jfJDGOXl9xfhFG7hD83+hb3cL815sWZ1AlWm
+    SOS5uMQ67SRw3d6Ug2q4na75DCLb8WbYXoEHrjlR0ZraLxmEKlchvOWA7kz5kDrA
+    F+52iLEzISsm2ivlOjXxGXLLSNgJUzVaAlIm/A5X4QKBgQCi6Lv7I9+FZK9KzWBQ
+    1oj3xhjOA/ibt4tu7Vu+JpaDq0Y12Gltgi89llBlc5MISvPxy9c72u8SCmyPe71d
+    kt2UgvUoG3RfDjbVS+BExW0UQ7rhOTHfHZMqqSBh8oSmBB9MIJ+VB9bJyZwZOtto
+    TTHWyNxB+mrHGTcJHHAv5MX6yw==
+    -----END PRIVATE KEY-----
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDNTCCAh2gAwIBAgIJALiPCFHLFhNPMA0GCSqGSIb3DQEBCwUAMBYxFDASBgNV
+    BAMMC0Vhc3ktUlNBIENBMB4XDTE3MDkxODA4MzEwN1oXDTI3MDkxNjA4MzEwN1ow
+    FjEUMBIGA1UEAwwLRWFzeS1SU0EgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+    ggEKAoIBAQC+sLzhdSrVCiU+8lkPgKd9MC6Q7zlgislvb+uEAwb4fspUSraPjCRl
+    gcAfSmHur+/MTPQK2pB58wMkm3g6vRkJt0E0wY76trZKVa8YjnSweEde+dxxeLXD
+    iIpoJFBhox/lgy3ddx2hEQHrlv7P4NZ9hRWpLZo3WMTw2OMfLrDPRyhQfBJosy0W
+    goJfdeB9UYLsZgfejPpILTaUy//ukFgoQMrSH/O98ZikbA8SdviRqjp03tqjzxV6
+    0Elcf2QLNbC1wiZTngdwtAVOJKgaGw1bBTrLWbck8Yk7bXatkEi86/l7um2iHOPD
+    9Y6kNrwCKTDBrM7+tKbdEPTiOuri2mO1AgMBAAGjgYUwgYIwHQYDVR0OBBYEFPN3
+    rdcnHkfSyUtd8NOfkHYYOoRwMEYGA1UdIwQ/MD2AFPN3rdcnHkfSyUtd8NOfkHYY
+    OoRwoRqkGDAWMRQwEgYDVQQDDAtFYXN5LVJTQSBDQYIJALiPCFHLFhNPMAwGA1Ud
+    EwQFMAMBAf8wCwYDVR0PBAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IBAQBgLNkq8wUr
+    cVBy008ojgfm0Ko/QJBRWcL0Yrl/r7N871KuDhLssItZ7aWZIg0j8deAfNrCVgCt
+    tpaGB2HC+yzhuEHRHlPCeoSw4O+xTS5AmJB9Q9WjRFP+yzJ7FIA4op3I8ZxvZK1w
+    nXVuAKkwyIrFM6yz5B/ift/t5Jxt6BaFdYjzOnQw5DbECh/PKhD0C4QUR28zVHKW
+    53xXDuPqiltIf94bJAf8Ct2HnGcQMWyqw1n6Bu0H73+ecG3XJxom8NOuWrGOPPSO
+    HnCoW35mnCgrKZ5YhJevpKDjuG6QbGtEs+caVWZOENFPBRe5tDAvyH2oMiPPe2CJ
+    5WjdLeyPTMZ0
+    -----END CERTIFICATE-----
+  dh.pem: |
+    -----BEGIN DH PARAMETERS-----
+    MIIBCAKCAQEAx7QV8Js07OH36V5pbPNVFsq5kLHz6QMnmN3f3pwQHtAl96wvcFeB
+    NOwMIVPKDiJjiRaWVpL42LryTbEyuWeAbYkgdU0fe6fZDLGLrGAwCEnIXBtAfaKt
+    829h6Tm0APaordl07KkWRDl8SYs/gZcgO0r7tC8kRCzHC5240pKWQg+dl1rZo+xh
+    2Zwu70RijW6pIXwUQ1vPp72muSpwLcelAdubuti3ASTl06aXjcaVvMRXkknXm8GP
+    V25irZq5qxq2EOQn9+V1Zr0qk+gN+cf2BwdS71eTbNhHmDofKxwUeYX7unKO+iPa
+    c5cal9OTocKVxYs03/0soF+qiDIhHVEa+wIBAg==
+    -----END DH PARAMETERS-----
+  openvpn.conf: |
+    server 192.168.255.0 255.255.255.0
+    verb 3
+    key /etc/openvpn/VPN.SERVERNAME.COM.key
+    ca /etc/openvpn/ca.crt
+    cert /etc/openvpn/VPN.SERVERNAME.COM.crt
+    dh /etc/openvpn/dh.pem
+    tls-auth /etc/openvpn/ta.key
+    key-direction 0
+    keepalive 10 60
+    persist-key
+    persist-tun
+
+    proto udp
+    # Rely on Docker to do port mapping, internally always 1194
+    port 1194
+    dev tun0
+    status /tmp/openvpn-status.log
+
+    user nobody
+    group nogroup
+
+    ### Route Configurations Below
+    route 192.168.254.0 255.255.255.0
+
+    ### Push Configurations Below
+    push "block-outside-dns"
+    push "dhcp-option DNS 8.8.8.8"
+    push "dhcp-option DNS 8.8.4.4"
+
+    duplicate-cn
+  ovpn_env.sh: |
+    declare -x OVPN_AUTH=
+    declare -x OVPN_CIPHER=
+    declare -x OVPN_CLIENT_TO_CLIENT=
+    declare -x OVPN_CN=VPN.SERVERNAME.COM
+    declare -x OVPN_COMP_LZO=0
+    declare -x OVPN_DEFROUTE=1
+    declare -x OVPN_DEVICE=tun
+    declare -x OVPN_DEVICEN=0
+    declare -x OVPN_DISABLE_PUSH_BLOCK_DNS=0
+    declare -x OVPN_DNS=1
+    declare -x OVPN_DNS_SERVERS=([0]="8.8.8.8" [1]="8.8.4.4")
+    declare -x OVPN_ENV=/etc/openvpn/ovpn_env.sh
+    declare -x OVPN_EXTRA_CLIENT_CONFIG=()
+    declare -x OVPN_EXTRA_SERVER_CONFIG=()
+    declare -x OVPN_FRAGMENT=
+    declare -x OVPN_KEEPALIVE='10 60'
+    declare -x OVPN_MTU=
+    declare -x OVPN_NAT=0
+    declare -x OVPN_PORT=1194
+    declare -x OVPN_PROTO=udp
+    declare -x OVPN_PUSH=()
+    declare -x OVPN_ROUTES=([0]="192.168.254.0/24")
+    declare -x OVPN_SERVER=192.168.255.0/24
+    declare -x OVPN_SERVER_URL=udp://VPN.SERVERNAME.COM
+    declare -x OVPN_TLS_CIPHER=
+  ta.key: |
+    #
+    # 2048 bit OpenVPN static key
+    #
+    -----BEGIN OpenVPN Static key V1-----
+    39fdc43386183dec5048fce378903cf4
+    5180b71ce22e4994bbca8b2f89d39ded
+    48e7d5b2a7a32db48490d3b0ef873803
+    8ae0d25471dc8f2fbf3c4e3bec3250a3
+    8601a37393b1dc9f39f096aeb15e0e44
+    363a2429576cba594848ed15434f08e0
+    ae656d190a3027b70df7566b3f029c3a
+    9e968d20ad984d7a48c5f2b2d92e870e
+    25ae2ba6293ac3a7fb2c1abac04ff60c
+    e36147a3d072f388e87d128d16b4f09c
+    479b8b93f5ae16b4351d9ffc60eee34f
+    152e5f2fb647c7d630bb4136d196b47e
+    0eae07e282e7acf6f61e13684679a9d0
+    f3601c69d3443b377e21803c9f63062f
+    671c1b13ba3ee8e872f12236a60a826a
+    bbd178f272829eec64258b3199a05134
+    -----END OpenVPN Static key V1-----
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2018-04-03T07:13:27Z
+  name: openvpn-configmap
+  namespace: kube-public
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openvpn
+  name: openvpn
+  namespace: kube-public
+spec:
+  ports:
+  - name: port1
+    nodePort: 1194
+    port: 1194
+    protocol: UDP
+    targetPort: 1194
+  selector:
+    app: openvpn
+  type: NodePort
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: openvpn
+  name: openvpn
+  namespace: kube-public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openvpn
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: openvpn
+    spec:
+      containers:
+      - image: {{BASE_IMAGE_URL}}/{{openvpn_image}}
+        imagePullPolicy: IfNotPresent
+        name: openvpn-container1
+        ports:
+        - containerPort: 1194
+          protocol: UDP
+        resources: {}
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        resources:
+          requests:
+            cpu: {{ openvpn_cpu_requests }}
+            memory: {{ openvpn_mem_requests }}
+          limits:
+            cpu: {{ openvpn_cpu_limit }}
+            memory: {{ openvpn_mem_limit }}
+        volumeMounts:
+        - mountPath: /opt/applogs
+          name: openvpn-volume-elk-log
+        - mountPath: /etc/openvpn
+          name: openvpn-configmap
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /data/log
+          type: ""
+        name: openvpn-volume-elk-log
+      - configMap:
+          defaultMode: 420
+          name: openvpn-configmap
+        name: openvpn-configmap

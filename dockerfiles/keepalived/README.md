@@ -1,0 +1,1 @@
+docker run --rm -it --net=host --cap-add=NET_ADMIN -v /var/run/docker.sock:/var/run/docker.sock  -v /opt/k8s/bin/docker:/bin/docker   -v /usr/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/:ro -v /lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu -v /etc/docker:/etc/docker alpine sh

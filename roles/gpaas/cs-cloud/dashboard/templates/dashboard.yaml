@@ -1,0 +1,98 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    description: dashboard
+  labels:
+    app: dashboard
+  name: dashboard
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+      - image: {{BASE_IMAGE_URL}}/{{cs_dashboard_fontend_image}}
+        name: dashboard-container1
+        resources:
+          requests:
+            cpu: {{ cs_fontend_cpu_requests }}
+            memory: {{ cs_fontend_mem_requests }}
+          limits:
+            cpu: {{ cs_fontend_cpu_limit }}
+            memory: {{ cs_fontend_mem_limit }}
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /home/work/config
+          name: dashboard-configmap
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: uimp-cloud-frontend
+        name: dashboard-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: uimp-cloud
+spec:
+  ports:
+  - name: port1
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: dashboard
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/proxy-body-size: 1000m
+  name: dashboard
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{cs_dashboard_fontend_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: dashboard
+          servicePort: 80
+        path: /
+---
+apiVersion: v1
+data:
+  default.json: | 
+    {
+      "url": {
+        "basic": "http://cs-uimp-cloud-ccapi:8082",
+         "auth": "http://cs-uimp-cloud-auth2",
+        "inspect": "http://inspect-server:8083",
+        "monitor": "http://monitor-service:8081"
+      },
+      "menu": {
+        "monitor": "http://{{grafana_ingress}}",
+        "log": "http://{{kibana_ingress}}"
+      },
+      "wsUrl": {
+        "basic": "http://{{cs_dashboard_backend_ingress}}",
+        "inspect": "http://{{cs_inspect_backend_ingress}}"
+      }
+    }
+
+kind: ConfigMap
+metadata:
+  name: uimp-cloud-frontend
+  namespace: uimp-cloud

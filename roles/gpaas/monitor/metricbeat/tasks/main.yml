@@ -1,0 +1,5 @@
+- include_tasks : process.yml
+  when: metricbeat_type == "process"
+
+- include_tasks : container.yml
+  when: metricbeat_type == "container"

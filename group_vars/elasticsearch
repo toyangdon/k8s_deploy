@@ -1,0 +1,11 @@
+# es运行的jvm参数，两个值建议设置相同，并且为虚拟机内存的一半
+#es_jvm_xms_size: "-Xms6g"
+#es_jvm_xmx_size: "-Xmx6g"
+
+es_storage_capacity: auto
+
+#es_cpu_limit: 4000m
+#es_cpu_requests: 1000m
+
+#es_mem_limit: 7Gi 
+#es_mem_requests: 1Gi

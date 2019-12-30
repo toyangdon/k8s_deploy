@@ -1,0 +1,38 @@
+logstash_image: prod/logstash-x-pack:6.2.4_log
+
+#部署方式 stand-alone 独立节点  coexistence  共存于es节点
+logstash_deploy_type: >-
+  {%- if group_names|length == 1 -%}stand-alone
+  {%- else -%}coexistence
+  {%- endif -%}
+  
+logstash_cpu_limit: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}{{ansible_processor_vcpus * 1000 * 0.85}}m
+  {%- else -%}{{ansible_processor_vcpus * 1000 * 0.50}}m
+  {%- endif -%}
+logstash_cpu_requests: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}{{ansible_processor_vcpus * 1000 * 0.4}}m
+  {%- else -%}{{ansible_processor_vcpus * 1000 * 0.2}}m
+  {%- endif -%}
+  
+
+logstash_mem_limit: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}{{ansible_memtotal_mb * 0.85}}Mi
+  {%- else -%}{{ansible_memtotal_mb * 0.35}}Mi
+  {%- endif -%}
+logstash_mem_requests: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}{{ansible_memtotal_mb * 0.4}}Mi
+  {%- else -%}{{ansible_memtotal_mb * 0.2}}Mi
+  {%- endif -%}
+
+
+logstash_jvm_xms_size: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}-Xms{{(ansible_memtotal_mb * 0.6)|int}}m
+  {%- else -%}-Xms{{(ansible_memtotal_mb * 0.3)|int}}m
+  {%- endif -%}
+
+logstash_jvm_xmx_size: >-
+  {%- if logstash_deploy_type == "stand-alone" -%}-Xmx{{(ansible_memtotal_mb * 0.6)|int}}m
+  {%- else -%}-Xmx{{(ansible_memtotal_mb * 0.3)|int}}m
+  {%- endif -%}
+  

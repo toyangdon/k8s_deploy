@@ -1,0 +1,41 @@
+elasticsearch_image: third_part/elasticsearch:6.2.4
+elasticsearch_indices_cleanup_image: prod/es-indices-cleanup:1.6.0
+
+es_data_path: >-
+  {{data_dir}}/es
+
+#部署方式 stand-alone 独立节点  coexistence  共存logstash
+es_deploy_type: >-
+  {%- if group_names|length == 1 -%}stand-alone
+  {%- else -%}coexistence
+  {%- endif -%}
+
+es_jvm_xms_size: >-
+  {%- if es_deploy_type == "stand-alone" -%}-Xms{{(ansible_memtotal_mb * 0.5)|int}}m
+  {%- else -%}-Xms{{(ansible_memtotal_mb * 0.25)|int}}m
+  {%- endif -%}
+es_jvm_xmx_size: >-
+  {%- if es_deploy_type == "stand-alone" -%}-Xmx{{(ansible_memtotal_mb * 0.5)|int}}m
+  {%- else -%}-Xmx{{(ansible_memtotal_mb * 0.25)|int}}m
+  {%- endif -%}
+
+es_cpu_limit: >-
+  {%- if es_deploy_type == "stand-alone" -%}{{ansible_processor_vcpus * 1000 * 0.85}}m
+  {%- else -%}{{ansible_processor_vcpus * 1000 * 0.45}}m
+  {%- endif -%}
+es_cpu_requests: >-
+  {%- if es_deploy_type == "stand-alone" -%}{{ansible_processor_vcpus * 1000 * 0.4}}m
+  {%- else -%}{{ansible_processor_vcpus * 1000 * 0.2}}m
+  {%- endif -%}
+  
+es_mem_limit: >-
+  {%- if es_deploy_type == "stand-alone" -%}{{ansible_memtotal_mb * 0.85}}Mi
+  {%- else -%}{{ansible_memtotal_mb * 0.55}}Mi
+  {%- endif -%}
+  
+es_mem_requests: >-
+  {%- if es_deploy_type == "stand-alone" -%}{{ansible_memtotal_mb * 0.4}}Mi
+  {%- else -%}{{ansible_memtotal_mb * 0.2}}Mi
+  {%- endif -%}
+
+es_storage_capacity: auto

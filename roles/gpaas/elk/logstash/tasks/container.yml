@@ -1,0 +1,9 @@
+- name: 创建logstash-deployment.yaml文件
+  template: src=logstash-deployment.yaml.j2 dest={{ base_dir }}/manifests/logstash-deployment.yaml
+  delegate_to: localhost
+  run_once: true
+  
+- name: 部署logstash-deployment
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/logstash-deployment.yaml"
+  delegate_to: localhost
+  run_once: true

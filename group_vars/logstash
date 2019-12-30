@@ -1,0 +1,10 @@
+#logstash_jvm_xms_size: -Xms6g
+#logstash_jvm_xmx_size: -Xmx6g
+
+logstash_type: container
+
+#logstash_cpu_limit: 4000m
+#logstash_cpu_requests: 1000m
+
+#logstash_mem_limit: 7Gi 
+#logstash_mem_requests: 1Gi

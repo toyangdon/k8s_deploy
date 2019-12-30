@@ -1,0 +1,25 @@
+- import_playbook: 01.prepare.yml
+
+- import_playbook: 02.docker.yml
+
+- import_playbook: 03.harbor.yml
+
+- import_playbook: 04.lb.yml
+
+- import_playbook: 05.kube-master.yml
+
+- import_playbook: 06.kube-node.yml
+
+- import_playbook: 07.calico.yml
+  when: "CLUSTER_NETWORK == 'calico'"
+  
+- import_playbook: 07.flannel.yml
+  when: "CLUSTER_NETWORK == 'flannel'"
+  
+- import_playbook: 09.storage-nfs.yml
+  when: "storage_type == 'nfs'"
+  
+- import_playbook: 10.storage-gluster.yml
+  when: "storage_type == 'glusterfs'"
+
+- import_playbook: 30.addons.yml

@@ -1,0 +1,14 @@
+harbor_admin_password: Harbor12345
+
+harbor_ext_endpoint: >-
+  {{ inventory_hostname }}
+
+images_src_path: >-
+  {{base_dir}}/images
+  
+images_path: /data/tmp/images
+  
+images_file_name: images.tar.gz
+
+images_file: >-
+  {{ images_path }}/{{ images_file_name }}

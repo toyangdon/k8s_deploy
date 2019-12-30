@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: uimp-cloud-push
+  name: uimp-cloud-push
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uimp-cloud-push
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: uimp-cloud-push
+      name: uimp-cloud-push
+    spec:
+      containers:
+      - env:
+        - name: spring_profiles_active
+          value: dev
+        - name: spring_datasource_url
+          value: "jdbc:mysql://{{cs_db_host}}:{{cs_db_port}}/{{cs_push_db_name}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8"
+        - name: spring_datasource_username
+          value: "{{cs_push_db_username}}"
+        - name: spring_datasource_password
+          value: "{{cs_push_db_passwd}}"
+        image: {{BASE_IMAGE_URL}}/{{cs_push_backend_image}}
+        name: uimp-cloud-push
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "0.5Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        volumeMounts:
+        - mountPath: /applogs
+          name: push-volume-elk-log
+      volumes:
+      - hostPath:
+          path: /data/log
+          type: ""
+        name: push-volume-elk-log
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: uimp-cloud-push
+  name: uimp-cloud-push
+  namespace: uimp-cloud
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: uimp-cloud-push
+  type: ClusterIP
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: uimp-cloud-push
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{cs_push_backend_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: uimp-cloud-push
+          servicePort: 8080
+        path: /

@@ -1,0 +1,14 @@
+#容器云部署#
+#cs-cloud-mysql
+cs_external_db: false
+
+#中铝视拓容器云控制面板部署
+cs_db_host: cs-mysql
+cs_db_port: 3306
+cs_db_username: root
+cs_db_passwd: 123456
+
+cs_dashboard_ingress_top_domain_name: >-
+  {{common_domain_suffix}}
+
+###

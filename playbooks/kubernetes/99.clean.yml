@@ -1,0 +1,138 @@
+# 警告：此脚本将清理真个K8S集群，包括所有POD、ETCD数据等
+# 请三思后运行此脚本 ansible-playbook 99.clean.yml
+
+- hosts: 
+  - kube-cluster
+  - lb
+  - elasticsearch
+  - logstash
+  - harbor
+  tasks:
+  - name: stop kube-node service
+    shell: "systemctl stop kubelet"
+    ignore_errors: true
+
+  - name: clean docker container
+    shell: "{{bin_dir}}/docker stop $({{bin_dir}}/docker ps -q) && {{bin_dir}}/docker rm $({{bin_dir}}/docker ps -aq)"
+    ignore_errors: true
+
+  - name: stop docker service
+    shell: "systemctl stop docker"
+    ignore_errors: true
+    
+  - name: umount kubelet 挂载的目录
+    shell: "mount | grep '/data/kubelet'| awk '{print $3}'|xargs -r umount"
+    ignore_errors: true
+
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "{{data_dir}}/kubelet/"
+    - "/etc/kubernetes/"
+    - "/etc/systemd/system/kubelet.service"
+    - "/etc/systemd/system/kube-proxy.service"
+    - "{{bin_dir}}/"
+    - "/data/kubelet/"
+    - "/data/kube-proxy/"
+    - "/data/log/"
+
+  # 因为calico-kube-controller使用了host网络，相当于使用了docker -net=host，需要
+  # 卸载 /var/run/docker/netns/default
+  - name: 卸载docker 相关fs0
+    mount: path=/var/run/docker/netns/default state=unmounted
+  - name: 卸载docker 相关fs1
+    mount: path=/run/docker/netns/* state=unmounted
+
+  - name: 卸载docker 相关fs2
+    mount: path={{data_dir}}/docker/overlay2/*/merged state=unmounted
+    
+  - name: 卸载docker 相关fs3
+    mount: path={{data_dir}}/docker/overlay2 state=unmounted
+    
+  - name: 卸载docker 相关fs4
+    mount: path={{data_dir}}/docker/plugins state=unmounted
+    
+  - name: 卸载docker 相关fs5
+    mount: path={{data_dir}}/docker/containers/*/shm state=unmounted
+
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "/etc/cni/"
+    - "/etc/flannel/"
+    - "/var/run/flannel/"
+    - "/var/log/flannel/"
+    - "{{data_dir}}/docker/"
+    - "/var/run/docker/"
+    - "/etc/systemd/system/docker.service"
+    - "/etc/systemd/system/docker.service.requires/"
+    - "/var/run/calico/"
+    - "/etc/calico/"
+    - "/root/.kube/"
+
+  - name: 清理 iptables
+    shell: "iptables -F && iptables -X \
+	&& iptables -F -t nat && iptables -X -t nat \
+	&& iptables -F -t raw && iptables -X -t raw \
+	&& iptables -F -t mangle && iptables -X -t mangle"
+
+  - name: 清理网络
+    shell: "ip link del docker0; ip link del flannel.1;ip link del cni0;ip link set tunl0 down;ip link del tunl0; systemctl restart network"
+    ignore_errors: true
+
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "{{data_dir}}/etcd/"
+    - "/etc/etcd/ssl"
+
+- hosts: lb
+  tasks:
+  - name: stop keepalived service
+    shell: systemctl disable keepalived && systemctl stop keepalived
+    ignore_errors: true
+
+  - name: stop haproxy service
+    shell: systemctl disable haproxy && systemctl stop haproxy
+    ignore_errors: true
+    
+  - name: stop nginx service
+    shell: systemctl disable nginx && systemctl stop nginx
+    ignore_errors: true
+
+  - name: 清理LB 配置文件目录
+    file: name={{ item }} state=absent
+    with_items:
+    - "/etc/haproxy"
+    - "/etc/keepalived"
+    - "/etc/nginx/nginx.conf"
+    - "/etc/kubernetes/ssl"
+    ignore_errors: true
+
+- hosts: deploy
+  tasks:
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "/etc/ansible/manifests/"
+    - "/root/.kube/"
+    - "/etc/kubernetes/ssl"
+    
+- hosts: kube-storage-node
+  tasks:
+  - name: 清理存储节点数据
+    file: name={{ item }} state=absent
+    with_items:
+    - "/var/lib/heketi"
+    - "/etc/glusterfs"
+    - "/var/log/glusterfs"
+    - "/var/lib/glusterd"
+    - "/var/lib/misc/glusterfsd"
+    - "/data/heketi"
+  - name: reboot
+    shell: shutdown -r
+  - name: wait for connecting
+    wait_for_connection: delay=70
+  - name: 清理存储节点磁盘分区数据
+    shell: vgdisplay -s -S pv_name={{gfs_device}} |awk '{print $1}'|sed 's/"//g'|xargs -r vgremove -y
+    ignore_errors: true

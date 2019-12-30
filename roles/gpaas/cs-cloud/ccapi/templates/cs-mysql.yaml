@@ -1,0 +1,154 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: cs-mysql
+  namespace: uimp-cloud
+  labels:
+    app: cs-mysql
+spec:
+#  clusterIP: None
+  type: ClusterIP
+  ports:
+   - name: http
+     protocol: TCP
+     port: 3306
+  selector:
+    app: cs-mysql
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-mysql-config
+  namespace: uimp-cloud
+data:
+  mysqld.cnf: |
+      [mysqld]
+      pid-file = /var/run/mysqld/mysqld.pid
+      socket = /var/run/mysqld/mysqld.sock
+      datadir = /var/lib/mysql
+      character-set-server=utf8
+      init_connect='SET NAMES utf8'
+      #####
+      ###if use this set. the console will don't have log.
+      log-error=/var/lib/mysql/error.log
+      #####
+      slow_query_log = 1
+      slow_query_log_file=/var/lib/mysql/mysql-slow.log
+      long_query_time = 10
+      #####
+      #By default we only accept connections from localhost
+      #bind-address = 127.0.0.1
+      #Disabling symbolic-links is recommended to prevent assorted security risks
+      symbolic-links = 0
+      #timezone
+      default-time_zone = '+8:00'
+      #logtime
+      log_timestamps=SYSTEM
+      [client]
+      default_character_set=utf8
+  init.sql: |
+      CREATE DATABASE  IF NOT EXISTS `{{cs_dashboard_db_name}}` DEFAULT CHARACTER SET utf8 ;
+      CREATE DATABASE  IF NOT EXISTS `{{cs_auth2_db_name}}` DEFAULT CHARACTER SET utf8 ;
+      CREATE DATABASE  IF NOT EXISTS `{{cs_monitor_db_name}}` DEFAULT CHARACTER SET utf8 ;
+      CREATE DATABASE  IF NOT EXISTS `{{cs_inspect_db_name}}` DEFAULT CHARACTER SET utf8 ;
+      CREATE DATABASE  IF NOT EXISTS `{{cs_push_db_name}}` DEFAULT CHARACTER SET utf8 ;
+  timezone.cnf: |
+      Asia/Shanghai
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cs-mysql
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-mysql
+    spec:
+      containers:
+      - name: mysql-k8s
+        image: {{BASE_IMAGE_URL}}/{{cs_mysql_backup_image}}
+        resources:
+          requests:
+            cpu: {{ cs_mysql_cpu_requests }}
+            memory: {{ cs_mysql_mem_requests }}
+          limits:
+            cpu: {{ cs_mysql_cpu_limit }}
+            memory: {{ cs_mysql_mem_limit }}
+        volumeMounts:
+          - name: timezone-volume
+            mountPath: /etc/timezone
+            subPath: timezone
+          - name: config-volume
+            mountPath: /etc/mysql/mysql.conf.d
+          - name: init-volume
+            mountPath: /docker-entrypoint-initdb.d/
+          - name: localtime-volume
+            mountPath: /etc/localtime
+          - name: mysql-db-volume
+            mountPath: /var/lib/mysql
+          - name: mysql-db-backup-volume
+            mountPath: /backup
+        ports:
+          - name: http
+            protocol: TCP
+            containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "{{cs_db_passwd}}"
+      volumes:
+        - name: timezone-volume
+          configMap:
+            name: cs-mysql-config
+            items:
+            - key: timezone.cnf
+              path: timezone
+        - name: config-volume
+          configMap:
+            name: cs-mysql-config
+            items:
+            - key: mysqld.cnf
+              path: mysqld.cnf
+        - name: init-volume
+          configMap:
+            name: cs-mysql-config
+            items:
+            - key: init.sql
+              path: init.sql
+        - name: localtime-volume
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+        - name: mysql-db-volume
+          persistentVolumeClaim:
+            claimName: cs-mysql
+        - name: mysql-db-backup-volume
+          persistentVolumeClaim:
+            claimName: mysql-backup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-mysql
+  namespace: uimp-cloud
+  labels:
+    app: mysql
+spec:
+  accessModes: [ "ReadWriteMany" ]
+  resources:
+    requests:
+      storage: 4G
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-backup
+  namespace: uimp-cloud
+  labels:
+    app: mysql-backup
+spec:
+  accessModes: [ "ReadWriteMany" ]
+  resources:
+    requests:
+      storage: 4G

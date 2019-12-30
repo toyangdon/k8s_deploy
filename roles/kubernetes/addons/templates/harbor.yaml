@@ -1,0 +1,782 @@
+# pv/pvc创建
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: storage-pvc
+  namespace: {{harbor_namespace}}
+  labels: 
+    app: storage-pvc
+spec:
+  storageClassName: gluster-heketi
+  accessModes: 
+    - ReadWriteMany
+  resources:
+    requests: 
+      storage: {{harbor_storage_size}}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: registry-pvc
+  namespace: {{harbor_namespace}}
+  labels: 
+    app: registry-pvc
+spec:
+  storageClassName: gluster-heketi
+  accessModes: 
+    - ReadWriteMany
+  resources:
+    requests: 
+      storage: {{harbor_config_size}}
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: log-pvc
+  namespace: {{harbor_namespace}}
+  labels: 
+    app: log-pvc
+spec:
+  storageClassName: gluster-heketi
+  accessModes: 
+    - ReadWriteMany
+  resources:
+    requests: 
+      storage: {{harbor_log_size}}
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-adminserver-config
+  namespace: {{harbor_namespace}}
+data:
+  LOG_LEVEL: debug
+  AUTH_MODE: db_auth
+  SELF_REGISTRATION: "on"
+  LDAP_URL: ldaps://ldap.mydomain.com
+  LDAP_SEARCH_DN: ""
+  LDAP_SEARCH_PWD: ""
+  LDAP_BASE_DN: "ou=people,dc=mydomain,dc=com"
+  LDAP_FILTER: ""
+  LDAP_UID: uid
+  LDAP_SCOPE: "3"
+  LDAP_TIMEOUT: "5"
+  DATABASE_TYPE: mysql
+  MYSQL_HOST: {{harbor_mysql_host}}
+  MYSQL_PORT: "3306"
+  MYSQL_USR: {{harbor_mysql_user}}
+  MYSQL_PWD: "{{harbor_mysql_password}}"
+  MYSQL_DATABASE: {{harbor_mysql_database}}
+  REGISTRY_URL: http://registry:5000
+  TOKEN_SERVICE_URL: http://ui/service/token
+  EMAIL_HOST: smtp.mydomain.com
+  EMAIL_PORT: "25"
+  EMAIL_USR: sample_admin@mydomain.com
+  EMAIL_PWD: abc
+  EMAIL_SSL: "false"
+  EMAIL_FROM: "admin <sample_admin@mydomain.com>"
+  EMAIL_IDENTITY: ""
+  HARBOR_ADMIN_PASSWORD: "Harbor12345"
+  PROJECT_CREATION_RESTRICTION: everyone
+  VERIFY_REMOTE_CERT: "on"
+  MAX_JOB_WORKERS: "3"
+  UI_SECRET: "nkHLuR0ygGtT3aA5"
+  JOBSERVICE_SECRET: "u7sjqjlqTgDP2iYe"
+  TOKEN_EXPIRATION: "30"
+  CFG_EXPIRATION: "5"
+  GODEBUG: "netdns=cgo"
+  ADMIRAL_URL: NA
+  WITH_NOTARY: "False"
+  RESET: "true"
+  EXT_ENDPOINT: {{harbor_ext_url}}
+  TOKEN_URL: http://ui
+  JSON_CFG_STORE_PATH: "/etc/config/config.json"
+  SECRET_KEY: "72SF49ARohQmSxLN"  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-nginx-config
+  namespace: {{harbor_namespace}}
+data:
+  config: |
+    worker_processes auto;
+
+    events {
+        worker_connections 1024;
+        use epoll;
+        multi_accept on;
+    }
+
+    http {
+        tcp_nodelay on;
+
+        # this is necessary for us to be able to disable request buffering in all cases
+        proxy_http_version 1.1;
+
+
+        upstream registry {
+            server registry:5000;
+        }
+
+        upstream ui {
+            server ui:80;
+        }
+        server {
+            listen 80;
+            server_name {{harbor_ext_endPoint}};
+
+            # disable any limits to avoid HTTP 413 for large image uploads
+            client_max_body_size 0;
+
+            # required to avoid HTTP 411: see Issue #1486 (https://github.com/docker/docker/issues/1486)
+            chunked_transfer_encoding on;
+
+            # rewrite ^/(.*) https://$server_name:443/$1 permanent;
+
+            location / {
+                proxy_pass http://ui/;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+                # When setting up Harbor behind other proxy, such as an Nginx instance, remove the below line if the proxy already has similar settings.
+                proxy_set_header X-Forwarded-Proto $scheme;
+            
+                proxy_buffering off;
+                proxy_request_buffering off;
+            }
+
+            location /v1/ {
+                return 404;
+            }
+
+            location /v2/ {
+                proxy_pass http://registry/v2/;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+                # When setting up Harbor behind other proxy, such as an Nginx instance, remove the below line if the proxy already has similar settings.
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                proxy_buffering off;
+                proxy_request_buffering off;
+
+            }
+
+            location /service/ {
+                proxy_pass http://ui/service/;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            
+                # When setting up Harbor behind other proxy, such as an Nginx instance, remove the below line if the proxy already has similar settings.
+                proxy_set_header X-Forwarded-Proto $scheme;
+            
+                proxy_buffering off;
+                proxy_request_buffering off;
+            }
+        }
+    }
+  pkey: |
+    USE_HTTP
+  cert: |
+    USE_HTTP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-registry-config
+  namespace: {{harbor_namespace}}
+data:
+  config: |
+    version: 0.1
+    log:
+      level: debug
+      fields:
+        service: registry
+    storage:
+      filesystem:
+        rootdirectory: /storage
+      cache:
+        layerinfo: inmemory
+      maintenance:
+        uploadpurging:
+          enabled: false
+      delete:
+        enabled: true
+    http:
+      addr: :5000
+      secret: placeholder
+      debug:
+        addr: localhost:5001
+    auth:
+      token:
+        issuer: harbor-token-issuer
+        realm: {{harbor_ext_url}}/service/token
+        rootcertbundle: /etc/registry/root.crt
+        service: harbor-registry
+    notifications:
+      endpoints:
+        - name: harbor
+          disabled: false
+          url: http://ui/service/notifications
+          timeout: 3000ms
+          threshold: 5
+          backoff: 1s
+
+  cert: |
+    -----BEGIN CERTIFICATE-----
+    MIIE0zCCArugAwIBAgIJAPjd7PgyS+EsMA0GCSqGSIb3DQEBCwUAMAAwHhcNMTgw
+    MjAyMDMxNTAyWhcNMjgwMTMxMDMxNTAyWjAAMIICIjANBgkqhkiG9w0BAQEFAAOC
+    Ag8AMIICCgKCAgEAqZ5OPGqSepXzssowRXyb1j6Y6kpxk4tD3DFmnnrl+DIo5JOa
+    LDNACiE2H/EFnKavYD8RGZ0MqJxCLgFBEs4UM8egXwHx42M9rx6SpqdK2l38dhTV
+    FMn5fLSs9J53A3Ou358BOTFdPVAr+x+mZg+nyTnvkVZvMJqZNNSVFXJ4+SgIUmbE
+    bP0iGHQMd8Kru+Polox4QwSzl5neVJiMhOFgnG/ZjshXWhJHTg9fGVIvfFfcDOAf
+    /QMC69pQxMMMYBoMRUjv8e+78gmzLl2jDm2elxKHkjIQOIxlu6rPS5O2fnmo9Eek
+    rEuBTltPcUJkvfSuuCDC28HLNBgstSrTi4L9F4k41oackzZ211zaZhByVjWU+xoH
+    SjwgUUC+8AG5fSYj1cz4A73dHnFPablqhF3GPtUuHbap+64S3Y4WtC89BlvIZfze
+    qhbY3pkGiPV0ZsbTyDN2rUrhwBujehHedXxx1ttGavcZOoksRpdibxzALM2REcvr
+    9tF4UPNv//gc5+ahpGl4j9PuhQfF+XsgVwnB4X4YtMF0SiwwrZPeY3Sl+nxwrgzx
+    nUnqRsTL6gwUnpuiIKA5iHqJnO74MQyQvhNCppZ6NI68SwssxovbjBWr0ZzBO9D9
+    s7Qjew7ND0KDaZBjMxDwjhfDF63yC03MaCKJ8LshzGoRK7GYlpsbwdPHMAkCAwEA
+    AaNQME4wHQYDVR0OBBYEFNYKtR9QjAKDw/kEcUTOZxAnuJAWMB8GA1UdIwQYMBaA
+    FNYKtR9QjAKDw/kEcUTOZxAnuJAWMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEL
+    BQADggIBACDW8y7QlfNMKnHUnSXRSJQbtxy2LUtlqtg4qQTD1b8kBaMxP3WaeQY+
+    CWKMoBGxBQVz2xFkXLZHFiW2cz3gWpFx3fdB2pnwlBk8sYiWdCd/e4OnqlGBkFoF
+    OKuMY5/3Jya6EF82XMQXkPQGf2eRX0hlV8xdQqwekKXNXQelnAkZ1tgWTcYhLsr/
+    9pC2exk9oGmg+kkWfInIgBXTnD3CgMZcDmmjg5zGLuAAiDQhl36BTbA195EnxWsl
+    audIy8riQC64MCQPwFRdcU1e/C5TlpZXp/0BAlEIq7OzUkZ0BMldhwSehGTJUttU
+    LYfzV0SvsafbOWwnz45hTh1kaEouUzmDncg0Lg5NH0ROqvyFWD2BlwZ5F57kTQ21
+    BHr8SfQwUO30ovdIYLGgiJBmt1vvRxmScBMNsVVLaXrxw8jhYSq1vsfYFmRXhNfT
+    miOquU9Mz2DHB85dgR2SYbuhzsBpvn0fkCCA4M9+WMelCL2FO1777lyT6S6HOImF
+    luN7jPpYYx98HCYJjhxo1p7qGXn75zj8O9PWPk+2ilK+9nxLAMzmKFz9pFvzHxVB
+    bTpL2CVF58g55tNhL8lOfT/hhttTFJMbfLv6VdyZ70PYDTh7Gn89JhKYWQ4Pz4Ga
+    hYfKdZkt52bZIVEVtHcWOTJ8g+RLFJLgOm8Qn9RfRS6M5HNkwYH3
+    -----END CERTIFICATE-----
+---    
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-ui-config
+  namespace: {{harbor_namespace}}
+data:
+  CONFIG_PATH: /etc/ui/app.conf
+  LOG_LEVEL: debug
+  UI_SECRET: "nkHLuR0ygGtT3aA5"
+  JOBSERVICE_SECRET: "u7sjqjlqTgDP2iYe"
+  GODEBUG: netdns=cgo
+  SECRET_KEY: "72SF49ARohQmSxLN"
+  config: |
+    appname = registry
+    runmode = dev
+    [lang]
+    types = en-US|zh-CN
+    names = en-US|zh-CN
+    [dev]
+    httpport = 80
+    [mail]
+    host = smtp.mydomain.com
+    port = 25
+    username = sample_admin@mydomain.com
+    password = abc
+    from = admin <sample_admin@mydomain.com>
+    ssl = false
+  pkey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    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
+    -----END RSA PRIVATE KEY-----
+---    
+# servcie
+apiVersion: v1
+kind: Service
+metadata:
+  name: harbor-nginx
+  namespace: {{harbor_namespace}}
+spec:
+  ports:
+    - port: 80
+  selector:
+    name: nginx-apps 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminserver
+  namespace: {{harbor_namespace}}
+spec:
+  ports:
+    - port: 80
+  selector:
+    name: adminserver-apps
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+  namespace: {{harbor_namespace}}
+spec:
+  ports:
+    - port: 80
+  selector:
+    name: ui-apps
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: {{harbor_namespace}}
+spec:
+  ports:
+    - name: repo
+      port: 5000
+    - name: debug
+      port: 5001
+  selector:
+    name: registry-apps
+---
+# rc
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: ui-rc
+  namespace: {{harbor_namespace}}
+  labels:
+    name: ui-rc
+spec:
+  replicas: 1
+  selector:
+    name: ui-apps
+  template:
+    metadata:
+      labels:
+        name: ui-apps
+    spec:
+      containers:
+      - name: ui-app
+        image: {{harbor_ui_image_url}}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CONFIG_PATH
+            valueFrom: 
+              configMapKeyRef: 
+               name: harbor-ui-config
+               key: CONFIG_PATH
+          - name: LOG_LEVEL
+            valueFrom: 
+              configMapKeyRef: 
+               name: harbor-ui-config
+               key: LOG_LEVEL
+          - name: UI_SECRET
+            valueFrom: 
+              configMapKeyRef: 
+               name: harbor-ui-config
+               key: UI_SECRET
+          - name: JOBSERVICE_SECRET
+            valueFrom: 
+              configMapKeyRef: 
+               name: harbor-ui-config
+               key: JOBSERVICE_SECRET
+          - name: GODEBUG
+            valueFrom: 
+              configMapKeyRef: 
+               name: harbor-ui-config
+               key: GODEBUG
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: config
+          mountPath: /etc/ui
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-ui-config
+          items:
+          - key: config
+            path: app.conf
+          - key: pkey
+            path: private_key.pem
+          - key: SECRET_KEY
+            path: key
+---    
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: adminserver-rc
+  namespace: {{harbor_namespace}}
+  labels:
+    name: adminserver-rc
+spec:
+  replicas: 3
+  selector:
+    name: adminserver-apps
+  template:
+    metadata:
+      labels:
+        name: adminserver-apps
+    spec:
+      containers:
+      - name: adminserver-app
+        image: {{harbor_admin_image_url}}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: LOG_LEVEL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LOG_LEVEL
+          - name: JSON_CFG_STORE_PATH
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: JSON_CFG_STORE_PATH
+          - name: EXT_ENDPOINT
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EXT_ENDPOINT
+          - name: AUTH_MODE
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: AUTH_MODE
+          - name: SELF_REGISTRATION
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: SELF_REGISTRATION
+          - name: LDAP_URL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_URL
+          - name: LDAP_SEARCH_DN
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_SEARCH_DN
+          - name: LDAP_SEARCH_PWD
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_SEARCH_PWD
+          - name: LDAP_BASE_DN
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_BASE_DN
+          - name: LDAP_FILTER
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_FILTER
+          - name: LDAP_UID
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_UID
+          - name: LDAP_SCOPE
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_SCOPE
+          - name: LDAP_TIMEOUT
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: LDAP_TIMEOUT
+          - name: DATABASE_TYPE
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: DATABASE_TYPE
+          - name: MYSQL_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MYSQL_HOST
+          - name: MYSQL_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MYSQL_PORT
+          - name: MYSQL_USR
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MYSQL_USR
+          - name: MYSQL_PWD
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MYSQL_PWD
+          - name: MYSQL_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MYSQL_DATABASE
+          - name: REGISTRY_URL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: REGISTRY_URL
+          - name: TOKEN_SERVICE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: TOKEN_SERVICE_URL
+          - name: EMAIL_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_HOST
+          - name: EMAIL_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_PORT
+          - name: EMAIL_USR
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_USR
+          - name: EMAIL_PWD
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_PWD
+          - name: EMAIL_SSL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_SSL
+          - name: EMAIL_FROM
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_FROM
+          - name: EMAIL_IDENTITY
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: EMAIL_IDENTITY
+          - name: HARBOR_ADMIN_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: HARBOR_ADMIN_PASSWORD
+          - name: PROJECT_CREATION_RESTRICTION
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: PROJECT_CREATION_RESTRICTION
+          - name: VERIFY_REMOTE_CERT
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: VERIFY_REMOTE_CERT
+          - name: MAX_JOB_WORKERS
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: MAX_JOB_WORKERS
+          - name: UI_SECRET
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: UI_SECRET
+          - name: JOBSERVICE_SECRET
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: JOBSERVICE_SECRET
+          - name: TOKEN_EXPIRATION
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: TOKEN_EXPIRATION
+          - name: CFG_EXPIRATION
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: CFG_EXPIRATION
+          - name: GODEBUG
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: GODEBUG
+          - name: ADMIRAL_URL
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: ADMIRAL_URL
+          - name: WITH_NOTARY
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: WITH_NOTARY
+          - name: RESET
+            valueFrom:
+              configMapKeyRef:
+                name: harbor-adminserver-config
+                key: RESET
+          #Workaround the volume API issue.
+          - name: IMAGE_STORE_PATH
+            value: "/"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: config
+          mountPath: /etc/adminserver/
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-adminserver-config
+          items:
+          - key: SECRET_KEY
+            path: key
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx-rc
+  namespace: {{harbor_namespace}}
+  labels:
+    name: nginx-rc
+spec:
+  replicas: 3
+  selector:
+    name: nginx-apps
+  template:
+    metadata:
+      labels:
+        name: nginx-apps
+    spec:
+      containers:
+      - name: nginx-app
+        image: {{harbor_ngnix_image_url}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-nginx-config
+          items:
+          - key: config
+            path: nginx.conf
+          - key: pkey
+            path: https.key
+          - key: cert
+            path: https.crt
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: registry-rc
+  namespace: {{harbor_namespace}}
+  labels:
+    name: registry-rc
+spec:
+  replicas: 3
+  selector:
+    name: registry-apps
+  template:
+    metadata:
+      labels:
+        name: registry-apps
+    spec:
+      containers:
+      - name: registry-app
+        image: {{harbor_registry_image_url}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        - containerPort: 5001
+        volumeMounts:
+        - name: config
+          mountPath: /etc/registry
+        - name: storage
+          mountPath: /storage
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-registry-config
+          items:
+          - key: config
+            path: config.yml
+          - key: cert
+            path: root.crt
+      - name: storage
+        persistentVolumeClaim:
+          claimName: storage-pvc
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata: 
+  name: harbor
+  namespace: {{harbor_namespace}}
+spec:
+  rules:
+  - host: {{harbor_ext_endPoint}}
+    http:
+      paths:
+      - path: /
+        backend: 
+          serviceName: harbor-nginx
+          servicePort: 80 

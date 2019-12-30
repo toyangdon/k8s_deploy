@@ -1,0 +1,20 @@
+- name: 创建/data/nfs 相关目录
+  file: name={{ item }} state=directory
+  with_items:
+  - "{{ NFS_PATH }}" 
+  
+- name: 安装nfs客户端
+  yum: name={{ item }} state=present
+  with_items:
+  - nfs-utils
+  - rpcbind
+  
+- name: 启动nfs客户端
+  shell: systemctl enable nfs-utils rpcbind && systemctl restart nfs-utils rpcbind
+
+- name: 修改/etc/exports的值
+  shell: echo {{ NFS_PATH }} *\(rw,insecure,async,no_subtree_check,no_root_squash\) > /etc/exports
+  
+- name: 使配置值生效
+  shell: exportfs -a
+ 

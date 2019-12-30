@@ -1,0 +1,28 @@
+# 所有主机进行基础环境配置
+- hosts: all
+  gather_facts: yes
+
+- hosts:
+  - kube-cluster
+  - deploy
+  roles:
+  - kubernetes/os-env
+
+- hosts: kube-storage-node
+  tasks:
+    - name: 检测存储节点中是否存在指定的磁盘设备
+      fail:
+        msg: "存储节点中找不到指定的磁盘设备"
+      when: 'ansible_devices[gfs_device|replace("/dev/","")] is not defined'
+
+# 在deploy节点生成CA相关证书，以及kubedns.yaml配置文件
+- hosts: deploy
+  roles:
+  - kubernetes/deploy
+
+# 集群节点的公共配置任务
+- hosts:
+  - kube-cluster
+  - deploy
+  roles:
+  - kubernetes/prepare

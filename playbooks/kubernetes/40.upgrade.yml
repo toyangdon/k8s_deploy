@@ -1,0 +1,90 @@
+- hosts: deploy
+  tags:
+  - addons
+  tasks:
+  - name: 升级kubectl二进制文件
+    copy: src={{ base_dir }}/bin/kubectl dest={{ bin_dir }}/kubectl mode=075
+  - name: 升级calico yaml
+    template: src={{base_dir}}/roles/addons/templates/calico.yaml dest={{ base_dir }}/manifests/calico.yaml
+    when: CLUSTER_NETWORK == "calico"
+  - name: 升级calico
+    shell: '{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/calico.yaml'
+    when: CLUSTER_NETWORK == "calico"
+  - name: 触发calico更新
+    shell: '{{bin_dir}}/kubectl patch daemonset calico-node -n kube-system  -p "{\"spec\":{\"updateStrategy\":{\"type\":\"RollingUpdate\"}}}"'
+    when: CLUSTER_NETWORK == "calico"
+    ignore_errors: true
+  - name: 升级 kubedns yaml文件
+    template: src={{base_dir}}/roles/addons/templates/kubedns.yaml dest={{ base_dir }}/manifests/kubedns.yaml
+  - name: 升级 kubedns
+    shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kubedns.yaml"
+  - name: 升级 kubernetes-dashboard yaml文件
+    template: src={{base_dir}}/roles/addons/templates/kubernetes-dashboard.yaml dest={{ base_dir }}/manifests/kubernetes-dashboard.yaml
+  - name: 升级 kubernetes-dashboard
+    shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kubernetes-dashboard.yaml"
+
+- hosts: kube-cluster
+  tasks:
+  - name: 升级kube-node二进制文件
+    copy: src={{ base_dir }}/bin/{{ item }} dest={{ bin_dir }}/{{ item }} mode=0755
+    with_items:
+    - kubectl
+    - kube-proxy
+    - kubelet
+
+- hosts: kube-master
+  tags:
+  - master
+  tasks:
+  - name: 备份etcd数据
+    shell: export ETCDCTL_API=3;{{bin_dir}}/etcdctl snapshot save {{data_dir}}/etcd/backup_`date +%Y%m%d.%s`.db
+    tags:
+    - etcd
+  - name: 更新kube-apiserver.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/apiserver.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-apiserver.yml
+    when: master_prepare is not defined
+  - name: 更新kube-controller-manager.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/manager.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-controller-manager.yml
+    when: master_prepare is not defined
+  - name: 更新kube-scheduler.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/scheduler.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-scheduler.yml
+    when: master_prepare is not defined
+  - name: 更新etcd.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/etcd.yml.conf.j2 dest=/etc/kubernetes/manifests/etcd.yml
+    when: master_prepare is not defined
+    tags:
+    - etcd
+  - name: 重启kubelet、kubeproxy
+    shell: systemctl restart kubelet kube-proxy  
+    tags:
+    - restart
+
+- hosts: kube-node
+  tags:
+  - node
+  tasks:
+  - name: 重启kubelet、kubeproxy
+    shell: systemctl restart kubelet kube-proxy
+    tags:
+    - restart
+
+- hosts: kube-master
+  tasks:
+  - name: 创建目录
+    file: name=/etc/kubernetes/update_prepare state=directory
+  - name: 准备kube-apiserver.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/apiserver.yml.conf.j2 dest=/etc/kubernetes/update_prepare/kube-apiserver.yml
+    when: master_prepare is defined
+  - name: 准备kube-controller-manager.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/manager.yml.conf.j2 dest=/etc/kubernetes/update_prepare/kube-controller-manager.yml
+    when: master_prepare is defined
+  - name: 准备kube-scheduler.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/scheduler.yml.conf.j2 dest=/etc/kubernetes/update_prepare/kube-scheduler.yml
+    when: master_prepare is defined
+  - name: 准备etcd.yml文件
+    template: src={{base_dir}}/roles/kube-master/templates/etcd.yml.conf.j2 dest=/etc/kubernetes/update_prepare/etcd.yml
+    when: master_prepare is defined
+    tags:
+    - etcd
+  tags:
+  - master_prepare

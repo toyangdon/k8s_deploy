@@ -1,0 +1,59 @@
+node('test') {
+
+	//部署文件路径
+	DEPLOY_PROJECT_PATH="${WORKSPACE}/k8s_deploy";
+	
+	//镜像文件保存目录
+	IMAGES_PATH="${DEPLOY_PROJECT_PATH}/images"
+	
+	//基础镜像文件列表
+	IMAGES_LIST="${DEPLOY_PROJECT_PATH}/tools/images/images_list"
+	
+	//应用商店镜像文件列表
+	APPS_IMAGES_LIST="${DEPLOY_PROJECT_PATH}/tools/images/apps_images_list"
+	
+	//打包文件保存目录
+	DEST_PATH="/k8s_data/${VERSION}"
+	
+	//源harobr镜像库地址
+	HARBOR_SRC="192.168.10.238"
+	
+	
+	stage('拉取k8s部署文件') {
+	    if("${CLEAN_FLAG}" == "true"){
+			cleanWs()
+		}
+		dir(DEPLOY_PROJECT_PATH){
+			git branch: "${BRANCH_NAME}", credentialsId: 'gitlab-pull-account', url: 'git@git.cs2025.com:uimpteam/k8s_deploy.git'
+		}
+	}
+	
+	if( "${GENERATE_IMAGES_LISTS}" == "true" ){
+		stage('生成基础镜像列表'){
+			sh "grep '_image:' -hr ${DEPLOY_PROJECT_PATH}/roles ${DEPLOY_PROJECT_PATH}/group_vars|cut -d':' -f2,3|sed  's/\"//g'|sed 's/ //g' |sort -u >${IMAGES_LIST} "
+		}
+	}
+	
+    stage('拉取并打包基础镜像') {
+		sh "sh ${DEPLOY_PROJECT_PATH}/tools/images/images_batch_save.sh ${IMAGES_PATH} ${HARBOR_SRC} ${IMAGES_LIST}"
+    }
+	
+	if( "${INCLUDE_APPS_IMAGES}" == "true" ){
+		stage('拉取并打包应用镜像'){
+			sh "sh ${DEPLOY_PROJECT_PATH}/tools/images/images_batch_save.sh ${IMAGES_PATH} ${HARBOR_SRC} ${APPS_IMAGES_LIST}"
+			sh "echo ${APPS_IMAGES_LIST} >> ${IMAGES_LIST}"
+			sh "rm -f ${APPS_IMAGES_LIST}"
+		}
+	}
+		
+		
+	stage('打包部署文件') {
+		sh "tar -czvf k8s_deploy.tar.gz k8s_deploy"
+    }
+		
+	stage('归档部署文件'){
+		//根据版本号创建目录，如果目录已经存在则报错退出
+		sh "mkdir -p ${DEST_PATH}"
+		sh "cp k8s_deploy.tar.gz ${DEST_PATH}/"
+	}
+}

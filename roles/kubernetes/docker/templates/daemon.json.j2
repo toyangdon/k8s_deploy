@@ -1,0 +1,12 @@
+{
+  "registry-mirrors": ["https://registry.docker-cn.com"]
+  ,"insecure-registries": [{%- for r in docker_insecure_registry.split(",") -%}"{{r}}"{% if not loop.last %},{% endif %}{%- endfor -%}]
+  ,"max-concurrent-downloads": 10
+  ,"log-opts":{
+    "max-size":"20m",
+	"max-file":"2"
+  }
+  ,"data-root": "{{data_dir}}/docker"
+  ,"storage-driver": "overlay2"
+  ,"live-restore": true
+}

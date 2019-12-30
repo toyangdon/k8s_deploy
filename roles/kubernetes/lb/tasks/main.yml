@@ -1,0 +1,45 @@
+- name: 创建haproxy配置目录
+  file: name=/etc/haproxy state=directory
+
+- name: 配置 haproxy
+  template: src=haproxy.cfg.j2 dest=/etc/haproxy/haproxy.cfg
+
+- name: 获取网卡信息
+  shell: 'ip route show| sed -e "s/^.*dev \([^ ]*\).*$/\1/"| head -n 1'
+  register: LB_IF_QUERY
+  
+- name: 创建keepalived配置目录
+  file: name=/etc/keepalived state=directory
+
+- name: 配置 keepalived 主节点
+  template: src=keepalived-master.conf.j2 dest=/etc/keepalived/keepalived.conf
+  when: 'LB_ROLE == "master" and not ansible_check_mode'
+
+- name: 配置 keepalived 备节点
+  template: src=keepalived-backup.conf.j2 dest=/etc/keepalived/keepalived.conf
+  when: 'LB_ROLE == "backup" and not ansible_check_mode'
+  
+#------日志配置--------------
+- name: haproxy log
+  lineinfile:
+    dest: /etc/rsyslog.conf
+    state: present
+    regexp: '^local0.*'
+    line: 'local0.*     /data/log/haproxy/haproxy.log'
+
+- name: haproxy logrotate配置
+  copy: src=haproxy dest=/etc/logrotate.d/haproxy
+
+- name: restart rsyslog
+  shell: systemctl restart rsyslog.service
+#----------------------------    
+  
+##-------------------------------------
+- name: 创建kubelet静态pod文件目录
+  file: name=/etc/kubernetes/manifests state=directory
+
+- name: 配置 haproxy
+  template: src=haproxy.yml.conf.j2 dest=/etc/kubernetes/manifests/haproxy.yml
+
+- name: keepalived.yml
+  template: src=keepalived.yml.conf.j2 dest=/etc/kubernetes/manifests/keepalived.yml

@@ -1,0 +1,2 @@
+- name: 解决出错
+  shell: "modprobe dm_thin_pool"

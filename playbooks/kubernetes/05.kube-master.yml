@@ -1,0 +1,6 @@
+- hosts: kube-master
+  gather_facts: yes
+ 
+- hosts: kube-master
+  roles:
+  - kubernetes/kube-master

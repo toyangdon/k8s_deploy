@@ -1,0 +1,151 @@
+# ------------------- Dashboard Service Account ------------------- #
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: cs-uimp-cloud-ccapi
+  name: cs-uimp-cloud-ccapi
+  namespace: uimp-cloud
+
+---
+
+# ------------------- Dashboard Role & Role Binding -------------------
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: cs-uimp-cloud-ccapi
+  labels:
+    k8s-app: cs-uimp-cloud-ccapi
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: cs-uimp-cloud-ccapi
+  namespace: uimp-cloud
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    description: cs-uimp-cloud-ccapi
+  labels:
+    app: cs-uimp-cloud-ccapi
+  name: cs-uimp-cloud-ccapi
+  namespace: uimp-cloud
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: cs-uimp-cloud-ccapi
+  template:
+    metadata:
+      labels:
+        app: cs-uimp-cloud-ccapi
+    spec:
+      containers:
+      - image: {{BASE_IMAGE_URL}}/{{cs_dashboard_backend_image}}
+        name: cs-uimp-cloud-ccapi-container1
+        ports:
+        - containerPort: 8082
+          protocol: TCP
+        resources:
+          requests:
+            cpu: {{ cs_ccapi_cpu_requests }}
+            memory: {{ cs_ccapi_mem_requests }}
+          limits:
+            cpu: {{ cs_ccapi_cpu_limit }}
+            memory: {{ cs_ccapi_mem_limit }}
+        env:
+        - name: spring_datasource_url
+          value: "jdbc:mysql://{{cs_db_host}}:{{cs_db_port}}/{{cs_dashboard_db_name}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8"
+        - name: spring_datasource_username
+          value: "{{cs_dashboard_db_username}}"
+        - name: spring_datasource_password
+          value: "{{cs_dashboard_db_passwd}}"
+        - name: uimp_ingress_top_domain_name
+          value: "{{cs_dashboard_ingress_top_domain_name}}"
+        - name: uimp_auth_url
+          value: http://cs-uimp-cloud-auth2
+        - name: UIMP_DOCKER_REGISTRY_URL
+          value: {{uimp_docker_registry_url}}
+        volumeMounts:
+        - mountPath: /applogs
+          name: ccapi-volume-elk-log
+      volumes:
+      - hostPath:
+          path: /data/log
+          type: ""
+        name: ccapi-volume-elk-log
+      serviceAccountName: cs-uimp-cloud-ccapi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cs-uimp-cloud-ccapi
+  name: cs-uimp-cloud-ccapi
+  namespace: uimp-cloud
+spec:
+  ports:
+  - name: port1
+    port: 8082
+    protocol: TCP
+    targetPort: 8082
+  selector:
+    app: cs-uimp-cloud-ccapi
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/proxy-body-size: 1000m
+  name: ccapi
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{cs_dashboard_backend_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: cs-uimp-cloud-ccapi
+          servicePort: 8082
+        path: /
+        
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/proxy-body-size: 1000m
+  name: kibana
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{kibana_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: kibana-service
+          servicePort: 5601
+        path: /  
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{grafana_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: grafana
+          servicePort: 8080
+        path: /  

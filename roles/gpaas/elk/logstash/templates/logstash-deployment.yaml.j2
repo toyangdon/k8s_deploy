@@ -1,0 +1,776 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-log4j
+  namespace: uimp-cloud
+data:
+  log4j2.properties: |
+      status = error
+      name = LogstashPropertiesConfig
+
+      appender.console.type = Console
+      appender.console.name = console
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%m%n
+
+      appender.rolling.type = RollingFile
+      appender.rolling.name = plain_rolling
+      appender.rolling.fileName = ${sys:ls.logs}/logstash-${sys:ls.log.format}.log
+      appender.rolling.filePattern = ${sys:ls.logs}/logstash-${sys:ls.log.format}-%d{yyyy-MM-dd}.log
+      appender.rolling.policies.type = Policies
+      appender.rolling.policies.time.type = TimeBasedTriggeringPolicy
+      appender.rolling.policies.time.interval = 1
+      appender.rolling.policies.time.modulate = true
+      appender.rolling.layout.type = PatternLayout
+      appender.rolling.layout.pattern = [%d{ISO8601}][%-5p][%-25c] %-.10000m%n
+      appender.rolling.policies.size.type = SizeBasedTriggeringPolicy
+      appender.rolling.policies.size.size=100MB
+      #appender.rolling.strategy.type = DefaultRolloverStrategy
+      #appender.rolling.strategy.max = 7
+      appender.rolling.strategy.type = DefaultRolloverStrategy
+      appender.rolling.strategy.action.type = Delete
+      appender.rolling.strategy.action.basepath = ${sys:ls.logs}
+      appender.rolling.strategy.action.condition.type = IfFileName
+      appender.rolling.strategy.action.condition.glob = logstash-${sys:ls.log.format}-*
+      appender.rolling.strategy.action.condition.nested_condition.type = IfLastModified
+      appender.rolling.strategy.action.condition.nested_condition.age = 3D
+
+      appender.json_rolling.type = RollingFile
+      appender.json_rolling.name = json_rolling
+      appender.json_rolling.fileName = ${sys:ls.logs}/logstash-${sys:ls.log.format}.log
+      appender.json_rolling.filePattern = ${sys:ls.logs}/logstash-${sys:ls.log.format}-%d{yyyy-MM-dd}.log
+      appender.json_rolling.policies.type = Policies
+      appender.json_rolling.policies.time.type = TimeBasedTriggeringPolicy
+      appender.json_rolling.policies.time.interval = 1
+      appender.json_rolling.policies.time.modulate = true
+      appender.json_rolling.layout.type = JSONLayout
+      appender.json_rolling.layout.compact = true
+      appender.json_rolling.layout.eventEol = true
+
+      rootLogger.level = ${sys:ls.log.level}
+      rootLogger.appenderRef.rolling.ref = ${sys:ls.log.format}_rolling
+      rootLogger.appenderRef.console.ref = console
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline-config
+  namespace: uimp-cloud
+data:
+  applog_module.conf: |
+    filter{
+      #microservie log
+      if[fields][type]=="applog" {
+        #linux
+        if[type]=="linux-filebeat" {
+          grok{
+            id => "applog-linux"
+            match => {
+              "log" => ["^\[%{TIMESTAMP_ISO8601:[app][logTime]}\]\[%{DATA:[app][nanoFlag]}\]\[%{DATA:[app][hostname]}\]\[%{APP_LOGLEVEL:[app][level]}\]\[%{DATA:[app][ip]}\]\[%{DATA:[app][namespace]}\]\[%{DATA:[app][servicename]}\]\[%{DATA:[app][traceId]}\,%{DATA:[app][parentSpanId]}\,%{DATA:[app][spanId]}\,%{DATA:[app][export]}\](\[%{DATA:[app][PID]}\])?\[%{DATA:[app][thread]}\]\[%{DATA:[app][class]}\] %{GREEDYDATA:[app][logMessage]}","^\[%{TIMESTAMP_ISO8601:[app][logTime]}\] \[%{DATA:[app][nanoFlag]}\] \[%{DATA:[app][hostname]}\] \[%{DATA:[app][level]}\] \[%{DATA:[app][ip]}\] \[%{DATA:[app][servicename]}\] \[%{DATA:[app][traceId]}\,%{DATA:[app][parentSpanId]}\,%{DATA:[app][spanId]}\,%{DATA:]app][export]}\](\s\[%{DATA:[app][PID]}\])? \[%{DATA:[app][thread]}\] \[%{DATA:[app][class]}\] %{GREEDYDATA:[app][logMessage]}"]
+            }
+            pattern_definitions => {
+              "APP_LOGLEVEL" => "INFO|ERROR|DEBUG|FATAL|WARN|TRACE"
+            }
+            remove_field => "log"
+          }
+        }
+        #windows
+        else if[type]=="windows-filebeat" {
+          grok{
+            id => "applog-windows"
+            match => {
+              "message" => ["^\[%{TIMESTAMP_ISO8601:[app][logTime]}\]\[%{DATA:[app][nanoFlag]}\]\[%{DATA:[app][hostname]}\]\[%{APP_LOGLEVEL:[app][level]}\]\[%{DATA:[app][ip]}\]\[%{DATA:[app][namespace]}\]\[%{DATA:[app][servicename]}\]\[%{DATA:[app][traceId]}\,%{DATA:[app][parentSpanId]}\,%{DATA:[app][spanId]}\,%{DATA:[app][export]}\](\[%{DATA:[app][PID]}\])?\[%{DATA:[app][thread]}\]\[%{DATA:[app][class]}\] %{GREEDYDATA:[app][logMessage]}","^\[%{TIMESTAMP_ISO8601:[app][logTime]}\] \[%{DATA:[app][nanoFlag]}\] \[%{DATA:[app][hostname]}\] \[%{DATA:[app][level]}\] \[%{DATA:[app][ip]}\] \[%{DATA:[app][servicename]}\] \[%{DATA:[app][traceId]}\,%{DATA:[app][parentSpanId]}\,%{DATA:[app][spanId]}\,%{DATA:]app][export]}\](\s\[%{DATA:[app][PID]}\])? \[%{DATA:[app][thread]}\] \[%{DATA:[app][class]}\] %{GREEDYDATA:[app][logMessage]}"]
+            }
+            pattern_definitions => {
+              "APP_LOGLEVEL" => "INFO|ERROR|DEBUG|FATAL|WARN|TRACE"
+            }
+            remove_field => "message"
+          }
+        }
+        date {
+          match => ["[app][logTime]", "yyyy-MM-dd HH:mm:ss.SSS"]
+          target => "@timestamp"
+          timezone => "+08:00"		  
+        }
+        ruby {
+          code => "event.set('[app][receiveTime]', event.get('@timestamp'))"
+        }		
+        mutate{
+          rename => {"log" => "logMessage"}
+          remove_field =>["[app][logTime]"]
+        }
+
+        if [app][level] not in ["error","ERROR","info","INFO","warn","WARN","TRACE","debug","DEBUG"]{
+            drop{}
+        }
+      }
+    }
+  input_logstash.conf: |
+      input {
+        beats {
+          id => "beat-linux"
+          port => 5044
+          type => "linux-filebeat"
+        }
+        beats {
+          id => "beat-windows"
+          port => 5045
+          type => "windows-filebeat"
+        }
+      }
+  mysql_module.conf: |
+    filter {
+      if [fileset][module] == "mysql" {
+        if [fileset][name] == "error" {
+          grok {
+            id => "mysql-error"
+            match => { "message" => ["^%{TIMESTAMP_ISO8601:[mysql][error][timestamp]} %{NUMBER:[mysql][error][thread_id]} \[%{DATA:[mysql][error][level]}\] %{GREEDYDATA:[mysql][error][message]}",
+            "^%{LOCALDATETIME:[mysql][error][timestamp]} (\[%{DATA:[mysql][error][level]}\] )?%{GREEDYDATA:[mysql][error][message1]}",
+            "^%{GREEDYDATA:[mysql][error][message2]}"]
+            }
+            pattern_definitions => {
+              "LOCALDATETIME" => "[0-9]+ %{TIME}"
+            }
+            remove_field => "message"
+          }
+          mutate {
+            rename => { "[mysql][error][message1]" => "[mysql][error][message]" }
+            rename => { "[mysql][error][message2]" => "[mysql][error][message]" }
+          }
+          date {
+            match => [ "[mysql][error][timestamp]","YYMMdd H:m:s","ISO8601"]
+          }
+        }
+        else if [fileset][name] == "slowlog" {
+          grok {
+            id => "mysql-slowlog"
+            match => { "message" => ["^# User@Host: %{USER:[mysql][slowlog][user]}(\[[^\]]+\])?\[%{HOSTNAME:[mysql][slowlog][host]}\]? @  \[(%{IP:[mysql][slowlog][ip]})?\](\s*Id:\s* %{NUMBER:[mysql][slowlog][id]})?\n# Query_time: %{NUMBER:[mysql][slowlog][query_time][sec]}\s* Lock_time: %{NUMBER:[mysql][slowlog][lock_time][sec]}\s*Rows_sent: %{NUMBER:[mysql][slowlog][rows_sent]}\s* Rows_examined: %{NUMBER:[mysql][slowlog][rows_examined]}(\nuse %{DATA:[mysql][slowlog][database]};)?\nSET timestamp=%{NUMBER:[mysql][slowlog][timestamp]};\n%{GREEDYMULTILINE:[mysql][slowlog][query]}"] }
+            pattern_definitions => {
+              "GREEDYMULTILINE" => "(.|\n)*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[mysql][slowlog][timestamp]", "UNIX" ]
+          }
+          mutate {
+            gsub => ["[mysql][slowlog][query]", "# Time: [0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\\.[0-9]+)?$", ""]
+          }
+        }
+      }
+    }
+  nginx_module.conf: |
+    filter {
+      if [fileset][module] == "nginx" {
+        if [fileset][name] == "access" {
+          grok {
+            id => "nginx-access"
+            match => { "message" => ["%{IPORHOST:[nginx][access][remote_ip]} - %{DATA:[nginx][access][user_name]} \[%{HTTPDATE:[nginx][access][time]}\] \"%{WORD:[nginx][access][method]} %{DATA:[nginx][access][url]} HTTP/%{NUMBER:[nginx][access][http_version]}\" %{NUMBER:[nginx][access][response_code]} %{NUMBER:[nginx][access][body_sent][bytes]} \"%{DATA:[nginx][access][referrer]}\" \"%{DATA:[nginx][access][agent]}\""] }
+            remove_field => "message"
+          }
+          mutate {
+            add_field => { "read_timestamp" => "%{@timestamp}" }
+          }
+          date {
+            match => [ "[nginx][access][time]", "dd/MMM/YYYY:H:m:s Z" ]
+            remove_field => "[nginx][access][time]"
+          }
+          useragent {
+            source => "[nginx][access][agent]"
+            target => "[nginx][access][user_agent]"
+            remove_field => "[nginx][access][agent]"
+          }
+          geoip {
+            source => "[nginx][access][remote_ip]"
+            target => "[nginx][access][geoip]"
+          }
+        }
+        else if [fileset][name] == "error" {
+          grok {
+            id => "nginx-error"
+            match => { "message" => ["%{DATA:[nginx][error][time]} \[%{DATA:[nginx][error][level]}\] %{NUMBER:[nginx][error][pid]}#%{NUMBER:[nginx][error][tid]}: (\*%{NUMBER:[nginx][error][connection_id]} )?%{GREEDYDATA:[nginx][error][message]}"] }
+            remove_field => "message"
+          }
+          mutate {
+            rename => { "@timestamp" => "read_timestamp" }
+          }
+          date {
+            match => [ "[nginx][error][time]", "YYYY/MM/dd H:m:s" ]
+            remove_field => "[nginx][error][time]"
+          }
+        }
+      }
+    }
+  mongodb_module.conf: |
+      filter {
+        if [fields][module] == "mongodb" {
+          if [fields][name] == "log" {
+            grok {
+              id => "mongodb-log"
+              match => { "message" => "%{TIMESTAMP_ISO8601:[mongodb][log][timestamp]} %{WORD:[mongodb][log][severity]} %{WORD:[mongodb][log][component]}  *\[%{WORD:[mongodb][log][context]}\] %{GREEDYDATA:[mongodb][log][message]}"
+            }
+            remove_field => "message"
+            }
+            date {
+              match => ["[logstash][log][timestamp]", "YYYY-MM-DD'T'HH:mm:ss.SSSZZ"]
+            }
+          }
+        }
+      }
+  gfs_module.conf: |
+    filter{
+      if[fields][module]=="gfs" {
+        if[fields][name]=="gfs-log" {
+            grok{
+            id => "gfs-log"
+              match => {
+                "message" => "^\[%{DATA:[gfs][log][timestamp]}\] %{DATA:[gfs][log][level]}(\s\[%{DATA:[gfs][log][thread]}\])? \[%{DATA:[gfs][log][class]}\] %{GREEDYDATA:[gfs][log][message]}"
+              }
+              remove_field => "message"
+            }
+            date {
+              match => [ "[gfs][log][timestamp]","yyyy-MM-dd HH:mm:ss.SSSSSS" ]
+              timezone => "+00:00"
+            }
+        }
+        else if[fields][name]=="bricks-log" {
+          grok{
+            id => "gfs-bricks"
+            match => {
+              "message" => "^\[%{DATA:[gfs][bricks][timestamp]}\] %{DATA:[gfs][bricks][level]}(\s\[%{DATA:[gfs][bricks][thread]}\])? \[%{DATA:[gfs][bricks][class]}\] %{GREEDYDATA:[gfs][bricks][message]}"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[gfs][bricks][timestamp]","yyyy-MM-dd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+        }
+        else if[fields][name]=="cli-log" {
+          grok{
+            id => "gfs-cli"
+            match => {
+              "message" => "^\[%{DATA:[gfs][cli][timestamp]}\] %{DATA:[gfs][cli][level]}(\s\[%{DATA:[gfs][cli][thread]}\])? \[%{DATA:[gfs][cli][class]}\] %{GREEDYDATA:[gfs][cli][message]}"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[gfs][cli][timestamp]","yyyy-MM-dd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+        }
+        else if[fields][name]=="shd-log" {
+          grok{
+            id => "gfs-shd"
+            match => {
+              "message" => "^\[%{DATA:[gfs][shd][timestamp]}\] %{DATA:[gfs][shd][level]}(\s\[%{DATA:[gfs][shd][thread]}\])? \[%{DATA:[gfs][shd][class]}\] %{GREEDYDATA:[gfs][shd][message]}"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[gfs][shd][timestamp]","yyyy-MM-dd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+        }
+      }
+    }
+  harbor_module.conf: |
+    filter{
+      if[fields][module]=="harbor" {
+        if[fields][name]=="adminserver" {
+          grok{
+            id => "harbor-adminserver"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[harbor][adminserver][timestamp]} %{SYSLOGHOST:[harbor][adminserver][hostname]} %{HARBORMODULE:[harbor][adminserver][module]}\[%{DATA:[harbor][adminserver][thread]}\]: %{GREEDYDATA:[harbor][adminserver][message]}"
+            }
+            pattern_definitions => {
+              "HARBORMODULE" => "\w*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[harbor][adminserver][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+        }
+        else if[fields][name]=="jobservice" {
+          grok{
+            id => "harbor-jobservice"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[harbor][jobservice][timestamp]} %{SYSLOGHOST:[harbor][jobservice][hostname]} %{HARBORMODULE:[harbor][jobservice][module]}\[%{DATA:[harbor][jobservice][thread]}\]: %{GREEDYDATA:[harbor][jobservice][message]}"
+            }
+            pattern_definitions => {
+              "HARBORMODULE" => "\w*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[harbor][jobservice][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+        }
+        else if[fields][name]=="ui" {
+          grok{
+            id => "harbor-ui"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[harbor][ui][timestamp]} %{SYSLOGHOST:[harbor][ui][hostname]} %{HARBORMODULE:[harbor][ui][module]}\[%{DATA:[harbor][ui][thread]}\]: %{GREEDYDATA:[harbor][ui][message]}"
+            }
+            pattern_definitions => {
+              "HARBORMODULE" => "\w*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[harbor][ui][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+        }
+        else if[fields][name]=="proxy" {
+          grok{
+            id => "harbor-proxy"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[harbor][proxy][timestamp]} %{SYSLOGHOST:[harbor][proxy][hostname]} %{HARBORMODULE:[harbor][proxy][module]}\[%{DATA:[harbor][proxy][thread]}\]: %{GREEDYDATA:[harbor][proxy][message]}"
+            }
+            pattern_definitions => {
+              "HARBORMODULE" => "\w*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[harbor][proxy][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+        }
+      }
+    }
+  k8s_module.conf: |
+    filter{
+      #masternode
+      if[fields][module]=="k8s" {
+      if[fields][name]=="apiserver" {
+          grok{
+            id => "k8s-apiserver"
+            match => {
+              "message" => "^%{LOCALLEVLE:[k8s][apiserver][level]}%{K8STIME:[k8s][apiserver][timestamp]}\s*%{DATA:[k8s][apiserver][thread]}\s%{DATA:[k8s][apiserver][class]}\] (%{K8sMETHOD:[k8s][apiserver][method]} %{DATA:[k8s][apiserver][url]}\s\(%{DATA:[k8s][apiserver][usetime]}\) %{DATA:[k8s][apiserver][status]}\s)?%{GREEDYDATA:[k8s][apiserver][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+              "K8STIME" => "[0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?"
+              "K8sMETHOD" => "PATCH|GET|PUT|POST|DELETE"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][apiserver][timestamp]", "MMdd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+      }
+      else if[fields][name]=="controller-manager" {
+          grok{
+            id => "k8s-controller-manager"
+            match => {
+              "message" => "^%{LOCALLEVLE:[k8s][ctrlmanager][level]}%{K8STIME:[k8s][ctrlmanager][timestamp]}\s*%{DATA:[k8s][ctrlmanager][thread]}\s%{DATA:[k8s][ctrlmanager][class]}\] %{GREEDYDATA:[k8s][ctrlmanager][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+              "K8STIME" => "[0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][ctrlmanager][timestamp]", "MMdd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+      }
+      else if[fields][name]=="etcd" {
+          grok{
+            id => "k8s-etcd"
+            match => {
+              "message" => "^%{DATA:[k8s][etcd][timestamp]}\s%{LOCALLEVLE:[k8s][etcd][level]} \| %{GREEDYDATA:[k8s][etcd][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][etcd][timestamp]", "YYYY-MM-dd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+      }
+      else if[fields][name]=="scheduler" {
+          grok{
+            id => "k8s-scheduler"
+            match => {
+              "message" => "^%{LOCALLEVLE:[k8s][scheduler][level]}%{K8STIME:[k8s][scheduler][timestamp]}\s*%{DATA:[k8s][scheduler][thread]}\s%{DATA:[k8s][scheduler][class]}\] %{GREEDYDATA:[k8s][scheduler][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+              "K8STIME" => "[0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][scheduler][timestamp]", "MMdd HH:mm:ss.SSSSSS" ]
+            timezone => "+00:00"
+          }
+      }
+      #allnode
+      else if[fields][name]=="kubelet" {
+          grok{
+            id => "k8s-kubelet"
+            match => {
+              "message" => "^%{LOCALLEVLE:[k8s][kubelet][level]}%{K8STIME:[k8s][kubelet][timestamp]}\s*%{DATA:[k8s][kubelet][thread]}\s%{DATA:[k8s][kubelet][class]}\] %{GREEDYDATA:[k8s][kubelet][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+              "K8STIME" => "[0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][kubelet][timestamp]", "MMdd HH:mm:ss.SSSSSS" ]
+          }
+      }
+      else if[fields][name]=="kube-proxy" {
+          grok{
+            id => "k8s-kube-proxy"
+            match => {
+              "message" => "^%{LOCALLEVLE:[k8s][proxy][level]}%{K8STIME:[k8s][proxy][timestamp]}\s*%{DATA:[k8s][proxy][thread]}\s%{DATA:[k8s][proxy][class]}\] %{GREEDYDATA:[k8s][proxy][message]}"
+            }
+            pattern_definitions => {
+              "LOCALLEVLE" => "\w"
+              "K8STIME" => "[0-9]+ ([0-9]|\s)?[0-9]:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][proxy][timestamp]", "MMdd HH:mm:ss.SSSSSS" ]
+          }
+      }
+      #lbnode
+      else if[fields][name]=="haproxylog" {
+          grok{
+            id => "k8s-haproxylog"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[k8s][haproxy][timestamp]} %{DATA:[k8s][haproxy][ip]} %{DATA:[k8s][haproxy][class]}\: %{GREEDYDATA:[k8s][haproxy][message]}"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][haproxy][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+      }
+      else if[fields][name]=="keepalivedlog" {
+          grok{
+            id => "k8s-keepalivedlog"
+            match => {
+              "message" => "^%{SYSLOGTIMESTAMP:[k8s][keepalived][timestamp]} %{DATA:[k8s][keepalived][ip]} %{DATA:[k8s][keepalived][class]}\: %{GREEDYDATA:[k8s][keepalived][message]}"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[k8s][keepalived][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+      }
+      }
+    }
+  system_module.conf: |
+    filter {
+      if [fileset][module] == "system" {
+        if [fileset][name] == "auth" {
+          grok {
+            id => "system-auth"
+            match => { "message" => ["%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} sshd(?:\[%{POSINT:[system][auth][pid]}\])?: %{DATA:[system][auth][ssh][event]} %{DATA:[system][auth][ssh][method]} for (invalid user )?%{DATA:[system][auth][user]} from %{IPORHOST:[system][auth][ssh][ip]} port %{NUMBER:[system][auth][ssh][port]} ssh2(: %{GREEDYDATA:[system][auth][ssh][signature]})?",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} sshd(?:\[%{POSINT:[system][auth][pid]}\])?: %{DATA:[system][auth][ssh][event]} user %{DATA:[system][auth][user]} from %{IPORHOST:[system][auth][ssh][ip]}",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} sshd(?:\[%{POSINT:[system][auth][pid]}\])?: Did not receive identification string from %{IPORHOST:[system][auth][ssh][dropped_ip]}",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} sudo(?:\[%{POSINT:[system][auth][pid]}\])?: \s*%{DATA:[system][auth][user]} :( %{DATA:[system][auth][sudo][error]} ;)? TTY=%{DATA:[system][auth][sudo][tty]} ; PWD=%{DATA:[system][auth][sudo][pwd]} ; USER=%{DATA:[system][auth][sudo][user]} ; COMMAND=%{GREEDYDATA:[system][auth][sudo][command]}",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} groupadd(?:\[%{POSINT:[system][auth][pid]}\])?: new group: name=%{DATA:system.auth.groupadd.name}, GID=%{NUMBER:system.auth.groupadd.gid}",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} useradd(?:\[%{POSINT:[system][auth][pid]}\])?: new user: name=%{DATA:[system][auth][user][add][name]}, UID=%{NUMBER:[system][auth][user][add][uid]}, GID=%{NUMBER:[system][auth][user][add][gid]}, home=%{DATA:[system][auth][user][add][home]}, shell=%{DATA:[system][auth][user][add][shell]}$",
+                      "%{SYSLOGTIMESTAMP:[system][auth][timestamp]} %{SYSLOGHOST:[system][auth][hostname]} %{DATA:[system][auth][program]}(?:\[%{POSINT:[system][auth][pid]}\])?: %{GREEDYMULTILINE:[system][auth][message]}"] }
+            pattern_definitions => {
+              "GREEDYMULTILINE"=> "(.|\n)*"
+            }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[system][auth][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+          geoip {
+            source => "[system][auth][ssh][ip]"
+            target => "[system][auth][ssh][geoip]"
+          }
+        }
+        else if [fileset][name] == "syslog" {
+          grok {
+            id => "system-syslog"
+            match => { "message" => ["%{SYSLOGTIMESTAMP:[system][syslog][timestamp]} %{SYSLOGHOST:[system][syslog][hostname]} %{DATA:[system][syslog][program]}(?:\[%{POSINT:[system][syslog][pid]}\])?: %{GREEDYMULTILINE:[system][syslog][message]}"] }
+            pattern_definitions => { "GREEDYMULTILINE" => "(.|\n)*" }
+            remove_field => "message"
+          }
+          date {
+            match => [ "[system][syslog][timestamp]", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+          }
+        }
+      }
+    }
+  rabbitmq_module.conf: |
+      filter {
+        if [fields][module] == "rabbitmq" {
+          if [fields][name] == "log" {
+            grok {
+              id => "rabbitmq-log"
+              match => { "message" => "%{TIMESTAMP_ISO8601:[rabbitmq][log][timestamp]} \[%{DATA:[rabbitmq][log][level]}\] %{GREEDYDATA:[rabbitmq][log][message]}"
+            }
+            remove_field => "message"
+            }
+            date {
+              match => ["[rabbitmq][log][timestamp]", "YYYY-MM-DD HH:mm:ss.SSS"]
+            }
+          }
+        }
+      }
+  output_logstash.conf: |
+      output {
+        if[fields][type] == "applog" {
+          elasticsearch {
+            id => "es-applog"
+            hosts => ["elasticsearch-service:9200"]
+            index => "%{[fields][type]}-%{+YYYY.MM.dd}"
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+          if[fields][module] == "gfs" {
+              elasticsearch {
+                id => "es-gfs"
+                hosts => ["elasticsearch-service:9200"]
+                index => "gfs-%{+YYYY.MM.dd}"
+                manage_template => false
+                http_compression => true
+                user => "logstash_internal"
+                password => "123456"
+              }
+          }
+          if[fields][module] == "harbor" {
+            elasticsearch {
+              id => "es-harbor"
+              hosts => ["elasticsearch-service:9200"]
+              index => "harbor-%{+YYYY.MM.dd}"
+              manage_template => false
+              http_compression => true
+              user => "logstash_internal"
+              password => "123456"
+            }
+          }
+          if[fields][module] == "k8s" {
+            elasticsearch {
+              id => "es-k8s"
+              hosts => ["elasticsearch-service:9200"]
+              index => "k8s-%{+YYYY.MM.dd}"
+              manage_template => false
+              http_compression => true
+              user => "logstash_internal"
+              password => "123456"
+            }
+          }
+        if[fields][module] == "mongodb" {
+          elasticsearch {
+            id => "es-mongodb"
+            hosts => ["elasticsearch-service:9200"]
+            index => "mongodb-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+        if[fileset][module] == "system" {
+          elasticsearch {
+            id => "es-system"
+            hosts => ["elasticsearch-service:9200"]
+            index => "filebeat-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+        if[fields][module] == "rabbitmq" {
+          elasticsearch {
+            id => "es-rabbitmq"
+            hosts => ["elasticsearch-service:9200"]
+            index => "rabbitmq-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+        if[fileset][module] == "mysql" {
+          elasticsearch {
+            id => "es-mysql"
+            hosts => ["elasticsearch-service:9200"]
+            index => "filebeat-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+        if[fileset][module] == "nginx" {
+          elasticsearch {
+            id => "es-nginx"
+            hosts => ["elasticsearch-service:9200"]
+            index => "filebeat-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+        if [@metadata][beat] == "metricbeat" {
+          elasticsearch {
+            id => "es-metricbeat"
+            hosts => ["elasticsearch-service:9200"]
+            index => "metricbeat-%{+YYYY.MM.dd}"
+            manage_template => false
+            http_compression => true
+            user => "logstash_internal"
+            password => "123456"
+          }
+        }
+      }
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    elastic-app: logstash
+  name: logstash
+  namespace: uimp-cloud
+spec:
+  replicas: {{groups['logstash']|length}}
+  selector:
+    matchLabels:
+      elastic-app: logstash
+  template:
+    metadata:
+      labels:
+        elastic-app: logstash
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node-role.kubernetes.io/logstash: "true"
+      tolerations:
+{% for taint in node_taints.split(",") %}
+      - operator: "Exists"
+        effect: "NoSchedule"
+        key: {{taint|replace("=:NoSchedule","")}}
+{% endfor %}
+      containers:
+        - name: logstash
+          image: "{{BASE_IMAGE_URL}}/{{ logstash_image }}"
+          volumeMounts:
+            - name: logstash-conf-volume
+              mountPath: /usr/share/logstash/pipeline
+            - name: logstash-log4j
+              mountPath: /usr/share/logstash/config/log4j2.properties
+              subPath: log4j2.properties
+            - name: logstash-logs
+              mountPath: /usr/share/logstash/logs
+            - name: localtime-volume
+              mountPath: /etc/localtime
+              readOnly: true			  
+          resources:
+          # need more cpu upon initialization, therefore burstable class
+            limits:
+              cpu: {{ logstash_cpu_limit }}
+              memory: "{{ logstash_mem_limit }}"
+            requests:
+              cpu: {{ logstash_cpu_requests }}
+              memory: "{{ logstash_mem_requests }}"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 5044
+              protocol: TCP
+            - containerPort: 5045
+              protocol: TCP
+          env:
+            #logstash 如果采用环境变量就不能再使用configMap   这和镜像相关。。ES支持。。
+            - name: "XPACK_MONITORING_ELASTICSEARCH_URL"
+              value: "http://elasticsearch-service:9200"
+            - name: "path.logs"
+              value: "/usr/share/logstash/logs"
+            - name: "pipeline.batch.size"
+              value: "1500"
+            - name: "pipeline.batch.delay"
+              value: "10"
+            - name: "LS_JAVA_OPTS"
+              value: "{{logstash_jvm_xms_size}} {{logstash_jvm_xmx_size}}"
+          securityContext:
+            privileged: true
+            #allowPrivilegeEscalation: true
+      volumes:
+        - name: logstash-conf-volume
+          configMap:
+            name: logstash-pipeline-config
+        - name: logstash-log4j
+          configMap:
+            name: logstash-log4j
+            items:
+            - key: log4j2.properties
+              path: log4j2.properties
+        - name: logstash-logs
+          hostPath:
+            path: /data/logstash/logs
+            #type: DirectoryOrCreate
+        - name: localtime-volume
+          hostPath:
+            path: /etc/localtime			
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: logstash
+  name: logstash-service-8080
+  namespace: uimp-cloud
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    elastic-app: logstash
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: logstash
+  name: logstash-service-linux
+  namespace: uimp-cloud
+spec:
+  ports:
+    - port: 5044
+      targetPort: 5044
+  selector:
+    elastic-app: logstash
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: logstash
+  name: logstash-service-win
+  namespace: uimp-cloud
+spec:
+  ports:
+    - port: 5045
+      targetPort: 5045
+  selector:
+    elastic-app: logstash

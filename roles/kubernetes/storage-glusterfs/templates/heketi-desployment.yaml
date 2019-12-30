@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: heketi-service-account
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: heketi-role
+  namespace: kube-system
+  labels:
+    k8s-app: heketi-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: heketi-service-account
+  namespace: kube-system
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: heketi
+  namespace: kube-system
+  labels:
+    glusterfs: heketi-service
+    deploy-heketi: support
+  annotations:
+    description: Exposes Heketi Service
+spec:
+  selector:
+    name: heketi
+  ports:
+  - name: heketi
+    port: 8080
+    targetPort: 8080
+    nodePort: 26060
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata: 
+  annotations: 
+    description: "Defines how to deploy Heketi"
+  labels: 
+    glusterfs: heketi-deployment
+  name: heketi
+  namespace: kube-system
+spec: 
+  replicas: 1
+  template: 
+    metadata: 
+      labels: 
+        glusterfs: heketi-pod
+        name: heketi
+      name: heketi
+    spec: 
+      hostAliases:
+{% for i in groups['kube-storage-node'] %}
+      - ip: "{{ i }}"
+        hostnames:
+          - "{{ hostvars[i]['NODE_ID']}}"
+{% endfor %}
+      containers: 
+        - 
+          env: 
+            - 
+              name: HEKETI_EXECUTOR
+              value: kubernetes
+            - 
+              name: HEKETI_IGNORE_STALE_OPERATIONS
+              value: "true"
+            - 
+              name: HEKETI_FSTAB
+              value: /var/lib/heketi/fstab
+            - 
+              name: HEKETI_SNAPSHOT_LIMIT
+              value: "14"
+            - 
+              name: HEKETI_KUBE_GLUSTER_DAEMONSET
+              value: "y"
+          image: {{BASE_IMAGE_URL}}/{{k8s_heketi_image}}
+          resources:
+            requests:
+              cpu: {{ heketi_cpu_requests }}
+              memory: {{ heketi_mem_requests }}
+            limits:
+              cpu: {{ heketi_cpu_limit }}
+              memory: {{ heketi_mem_limit }}
+          livenessProbe: 
+            httpGet: 
+              path: /hello
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
+          name: heketi
+          ports: 
+            - 
+              containerPort: 8080
+          readinessProbe: 
+            httpGet: 
+              path: /hello
+              port: 8080
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+          volumeMounts: 
+            - 
+              mountPath: /var/lib/heketi
+              name: db
+      serviceAccountName: heketi-service-account
+      tolerations:
+      - key: "node-role.kubernetes.io/storage-node"
+        operator: "Exists"
+        effect: "NoSchedule"
+      volumes: 
+      - hostPath: 
+          path: /data/heketi
+          type: DirectoryOrCreate
+        name: db
+      nodeSelector:
+        "node-role.kubernetes.io/heketi": "true"

@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ""
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers :
+  - name: kube-apiserver
+    image: {{BASE_IMAGE_URL}}/{{k8s_apiserver_image}}
+    command:
+      - kube-apiserver
+      - --bind-address=0.0.0.0
+      - --secure-port={{ secure_port }}
+      - --insecure-port={{ insecure_port }}
+      - --admission-control=Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,ResourceQuota
+      - --authorization-mode=Node,RBAC
+      - --enable-bootstrap-token-auth=true
+      - --insecure-bind-address=0.0.0.0
+      - --kubelet-https=true
+      - --anonymous-auth=false
+      - --basic-auth-file={{ ca_dir }}/basic-auth.csv
+      - --token-auth-file={{ ca_dir }}/token.csv
+      - --service-cluster-ip-range={{ SERVICE_CIDR }}
+      - --service-node-port-range={{ NODE_PORT_RANGE }}
+      - --tls-cert-file={{ ca_dir }}/kubernetes.pem
+      - --tls-private-key-file={{ ca_dir }}/kubernetes-key.pem
+      - --kubelet-client-certificate={{ ca_dir }}/kubernetes.pem
+      - --kubelet-client-key={{ ca_dir }}/kubernetes-key.pem
+      - --client-ca-file={{ ca_dir }}/ca.pem
+      - --service-account-key-file={{ ca_dir }}/ca-key.pem
+      - --etcd-servers=http://127.0.0.1:2379
+      - --enable-swagger-ui=true
+      - --allow-privileged=true
+      - --audit-log-maxage=30
+      - --audit-log-maxbackup=3
+      - --audit-log-maxsize=100
+      - --audit-policy-file=/etc/kubernetes/audit-policy.yml
+      - --audit-log-path=/data/log/kube-apiserver/audit.log
+      - --event-ttl=1h
+      - --v=2
+      - --alsologtostderr 
+      - --logtostderr=false 
+      - --log-dir=/data/log/kube-apiserver
+      - --requestheader-client-ca-file={{ ca_dir }}/ca.pem
+      - --requestheader-allowed-names=aggregator
+      - --proxy-client-cert-file={{ ca_dir }}/aggregator-proxy.pem
+      - --proxy-client-key-file={{ ca_dir }}/aggregator-proxy-key.pem
+      - --requestheader-group-headers=X-Remote-Group
+      - --requestheader-extra-headers-prefix=X-Remote-Extra-
+      - --requestheader-username-headers=X-Remote-User
+      - --enable-aggregator-routing=true
+      - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP
+    livenessProbe:
+      failureThreshold: 8
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: {{ insecure_port }}
+      initialDelaySeconds: 15
+      timeoutSeconds: 15
+    resources:
+      requests:
+        cpu: {{ apiserver_cpu_requests }}
+        memory: "{{ apiserver_mem_requests }}"
+      limits:
+        cpu: {{ apiserver_cpu_limit }}
+        memory: "{{ apiserver_mem_limit }}"
+    volumeMounts:
+    - mountPath: /data/log/kube-apiserver
+      name: k8s-log
+    - mountPath: {{ ca_dir }}
+      name: k8s-certs
+      readOnly: true
+    - mountPath: /etc/kubernetes/audit-policy.yml
+      name: audit-config
+      readOnly: true
+  volumes:
+  - hostPath:
+      path: /data/log/kube-apiserver
+      type: DirectoryOrCreate
+    name: k8s-log
+  - hostPath:
+      path: {{ ca_dir }}
+      type: DirectoryOrCreate
+    name: k8s-certs
+  - hostPath:
+      path: /etc/kubernetes/audit-policy.yml
+      type: FileOrCreate
+    name: audit-config

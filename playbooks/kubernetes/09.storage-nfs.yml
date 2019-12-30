@@ -1,0 +1,12 @@
+- hosts: storage-nfs-node
+  roles:
+  - kubernetes/storage-nfs
+
+- hosts: deploy
+  tasks:
+  - name: 创建 deplyment-nfs.yaml文件
+    template: src={{ base_dir }}/roles/storage-nfs/templates/deployment-nfs.yaml dest={{ base_dir }}/manifests/deployment-nfs.yaml
+
+  - name: 部署 deplyment-nfs.yaml
+    shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/deployment-nfs.yaml"
+ 

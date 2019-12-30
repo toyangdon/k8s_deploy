@@ -1,0 +1,110 @@
+# Please keep kube-proxy configuration in-sync with:
+# cluster/saltbase/salt/kube-proxy/kube-proxy.manifest
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: kube-proxy
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: kube-proxy
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-proxy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 10%
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-proxy
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      hostNetwork: true
+      tolerations:
+      - operator: "Exists"
+        effect: "NoExecute"
+      - operator: "Exists"
+        effect: "NoSchedule"
+      containers:
+      - name: kube-proxy
+        image: {{BASE_IMAGE_URL}}/{{k8s_kube_proxy_image}}
+        resources:
+          requests:
+            cpu: {{ kubeproxy_cpu_requests }}
+            memory: {{ kubeproxy_mem_requests }}
+          limits:
+            cpu: {{ kubeproxy_cpu_limit }}
+            memory: {{ kubeproxy_mem_limit }}
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /healthz
+            port: 10256
+          failureThreshold: 8
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 15
+        command:
+        - /bin/sh
+        - -c
+        - kube-proxy --kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig --v=2  --alsologtostderr --logtostderr=false --log-dir=/data/log/kube-proxy --healthz-bind-address=127.0.0.1
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /data/log/kube-proxy
+          name: varlog
+        - mountPath: /run/xtables.lock
+          name: xtables-lock
+          readOnly: false
+        - mountPath: /lib/modules
+          name: lib-modules
+          readOnly: true
+        - mountPath: /etc/kubernetes/kube-proxy.kubeconfig
+          name: kube-config
+          readOnly: true
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /data/log/kube-proxy
+          type: DirectoryOrCreate
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+      - name: kube-config
+        hostPath:
+          path: /etc/kubernetes/kube-proxy.kubeconfig
+      serviceAccountName: kube-proxy
+      
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: system:kube-proxy
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+subjects:
+  - kind: ServiceAccount
+    name: kube-proxy
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:node-proxier
+  apiGroup: rbac.authorization.k8s.io

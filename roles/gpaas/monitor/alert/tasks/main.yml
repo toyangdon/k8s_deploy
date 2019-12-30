@@ -1,0 +1,7 @@
+- name: 创建 monitor-service yaml文件
+  template: src=monitor-service.yaml dest={{ base_dir }}/manifests/cs-cloud/monitor-service.yaml
+  when: cs_monitor_enable == true
+  
+- name: 部署 monitor-service
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/cs-cloud/monitor-service.yaml"
+  when: cs_monitor_enable == true

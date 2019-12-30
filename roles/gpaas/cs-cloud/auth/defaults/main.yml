@@ -1,0 +1,9 @@
+#中铝视拓容器云认证服务部署
+cs_auth2_image: prod/uimp-auth2:1.6.0
+cs_auth2_db_name: uimpauth2
+cs_auth2_db_username: >- 
+  {{cs_db_username}}
+cs_auth2_db_passwd: >-
+  {{cs_db_passwd}}
+cs_auth2_ingress: >-
+  ccapi-auth2.{{cs_dashboard_ingress_top_domain_name}}

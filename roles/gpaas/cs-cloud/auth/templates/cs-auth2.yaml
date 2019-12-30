@@ -1,0 +1,82 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: cs-uimp-cloud-auth2
+  name: cs-uimp-cloud-auth2
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cs-uimp-cloud-auth2
+  template:
+    metadata:
+      labels:
+        app: cs-uimp-cloud-auth2
+    spec:
+      containers:
+      - env:
+        - name: server_port
+          value: "80"
+        - name: spring_datasource_url
+          value: "jdbc:mysql://{{cs_db_host}}:{{cs_db_port}}/{{cs_auth2_db_name}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8"
+        - name: spring_datasource_username
+          value: "{{cs_auth2_db_username}}"
+        - name: spring_datasource_password
+          value: "{{cs_auth2_db_passwd}}"
+        image: {{BASE_IMAGE_URL}}/{{cs_auth2_image}}
+        name: auth2-container
+        ports:
+        - containerPort: 80
+          name: port-1
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "0.5Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1.5Gi"
+        volumeMounts:
+        - mountPath: /applogs
+          name: auth2-volume-elk-log
+      volumes:
+      - hostPath:
+          path: /data/log
+          type: ""
+        name: auth2-volume-elk-log
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-uimp-cloud-auth2
+  namespace: uimp-cloud
+spec:
+  ports:
+  - name: port-0
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: cs-uimp-cloud-auth2
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/proxy-body-size: 1000m
+  name: cs-uimp-cloud-auth2
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{cs_auth2_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: cs-uimp-cloud-auth2
+          servicePort: 80
+        path: /

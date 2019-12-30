@@ -1,0 +1,61 @@
+global
+        log /dev/log local0 info
+        #chroot /var/lib/haproxy
+        #stats socket /var/lib/haproxy/admin.sock mode 660 level admin
+        stats timeout 30s
+        #user haproxy
+        #group haproxy
+        daemon
+        nbproc 1
+
+defaults
+        log     global
+        timeout connect 5000
+        option forwardfor
+
+listen kube-master
+        bind 0.0.0.0:{{ MASTER_PORT }}
+        mode tcp
+        option tcplog
+        option ssl-hello-chk
+        option httpchk GET /healthz
+        timeout client  50000
+        timeout server  10000
+        balance source
+{% for i in groups['kube-master'] %}
+        server s{{i}} {{ i }}:{{ hostvars[i]['secure_port']}}  check port 8080 inter 10000 fall 2 rise 2 weight 1
+{% endfor %}
+        
+listen kube-master-insecure
+        bind {{MASTER_IP}}:8080
+        mode tcp
+        option tcplog
+        timeout client  50000
+        timeout server  10000
+        balance source
+{% for i in groups['kube-master'] %}
+        server s{{i}} {{ i }}:{{ hostvars[i]['insecure_port']}}  check inter 10000 fall 2 rise 2 weight 1
+{% endfor %}
+
+listen kube-node
+        bind {{MASTER_IP}}:80
+        mode http
+        option http-server-close
+#        timeout tunnel 1h
+#        timeout client-fin 30
+        acl hdr_connection_upgrade hdr(Connection) -i upgrade
+        acl hdr_upgrade_websocket hdr(Upgrade) -i websocket
+        balance roundrobin
+{% for i in groups['kube-compute-node'] %}
+        server s{{i}} {{ i }}:80  check inter 10000 fall 2 rise 2 weight 1
+{% endfor %}
+
+listen stats
+        mode http
+        bind 0.0.0.0:8000
+        stats enable
+        stats hide-version
+        stats uri /stats
+        stats realm Haproxy\ Statistics
+        stats auth admin:Zlst8888
+        stats admin if TRUE #启用管理功能

@@ -1,0 +1,70 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: zipkin-server
+  name: zipkin-server
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: zipkin-server
+  template:
+    metadata:
+      labels:
+        k8s-app: zipkin-server
+    spec:
+      containers:
+      - env:
+        - name: zipkin_storage_elasticsearch_hosts
+          value: elasticsearch-service:9200
+        - name: zipkin_storage_elasticsearch_username
+          value: zipkin
+        - name: zipkin_storage_elasticsearch_password
+          value: "123456"
+        - name: logging_level_root
+          value: info
+        image: {{BASE_IMAGE_URL}}/{{zipkin_image}}
+        name: zipkin-server-container
+        ports:
+        - containerPort: 9411
+          protocol: TCP
+        resources:
+          limits:
+            memory: 1.5Gi
+          requests:
+            cpu: 100m
+            memory: 800Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: zipkin-server
+  name: zipkin-server
+  namespace: kube-system
+spec:
+  ports:
+  - name: port1
+    port: 80
+    protocol: TCP
+    targetPort: 9411
+  selector:
+    k8s-app: zipkin-server
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: zipkin-server
+  namespace: kube-system
+spec:
+  rules:
+  - host: {{zipkin_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: zipkin-server
+          servicePort: 80
+        path: /

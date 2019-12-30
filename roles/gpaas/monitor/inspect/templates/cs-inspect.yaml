@@ -1,0 +1,129 @@
+#---------------------------- serviceAccount ------------------------#
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: inspect-server
+  name: inspect-server
+  namespace: uimp-cloud
+---
+#---------------------------- role binding ------------------------#
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: inspect-server
+  labels:
+    k8s-app: inspect-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: inspect-server
+  namespace: uimp-cloud
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    description: inspect-server
+  labels:
+    app: inspect-server
+  name: inspect-server
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: inspect-server
+  template:
+    metadata:
+      labels:
+        app: inspect-server
+    spec:
+      containers:
+      - image: {{BASE_IMAGE_URL}}/{{cs_inspect_backend_image}}
+        name: inspect-server-container1
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "0.5Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1.5Gi"
+        env:
+        - name: spring_datasource_url
+          value: "jdbc:mysql://{{cs_db_host}}:{{cs_db_port}}/{{cs_inspect_db_name}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8"
+        - name: spring_datasource_username
+          value: "{{cs_inspect_db_username}}"
+        - name: spring_datasource_password
+          value: "{{cs_inspect_db_passwd}}"
+        - name: inspect_pvc_api
+          value: "{{cs_inspect_pvc_api}}"
+        - name: inspect_authority_ccapiAuthority
+          value: "false"
+        - name: inspect_score
+          value: "90"
+        - name: es_api_url
+          value: "{{cs_inspect_es}}"
+        - name: inspect_elasticsearch_authorityFlag
+          value: "false"
+        - name: spring_profiles_active
+          value: dev
+        - name: inspect_elasticsearch_username
+          value: "{{cs_inspect_es_username}}"
+        - name: inspect_elasticsearch_password
+          value: "{{cs_inspect_es_password}}"
+        - name: heapster_api_url
+          value: "http://heapster/api/v1/model"
+        ports:
+        - containerPort: 8083
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /applogs
+          name: inspect-volume-elk-log
+      volumes:
+      - hostPath:
+          path: /data/log
+          type: ""
+        name: inspect-volume-elk-log
+      serviceAccountName: inspect-server
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: inspect-server
+  name: inspect-server
+  namespace: uimp-cloud
+spec:
+  ports:
+  - name: port1
+    port: 8083
+    protocol: TCP
+    targetPort: 8083
+  selector:
+    app: inspect-server
+  type: ClusterIP
+  
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/proxy-body-size: 1000m
+  name: inspect-server
+  namespace: uimp-cloud
+spec:
+  rules:
+  - host: {{cs_inspect_backend_ingress}}
+    http:
+      paths:
+      - backend:
+          serviceName: inspect-server
+          servicePort: 8083
+        path: /

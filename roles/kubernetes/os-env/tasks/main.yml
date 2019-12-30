@@ -1,0 +1,106 @@
+- name: 系统版本检测
+  fail: 
+    msg: "系统要求为CentOS 7"
+  when: ansible_distribution != "CentOS" or ansible_distribution_major_version != "7"
+
+- name: 系统内核检测
+  fail: 
+    msg: "内核版本需要大于4.0"
+  when: not (ansible_kernel | match("4.*.x86_64"))
+
+- block:
+    - name: 删除centos默认安装
+      yum: name={{ item }} state=absent
+      with_items:
+        - firewalld
+        - python-firewall
+        - firewalld-filesystem
+
+    - name: 临时关闭 selinux
+      shell: "setenforce 0" 
+      failed_when: false
+    - name: 永久关闭 selinux
+      lineinfile:
+        dest: /etc/selinux/config
+        regexp: "^SELINUX="
+        line: "SELINUX=disabled"
+
+# 设置系统参数for k8s
+- name: Load br_netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
+  register: br_netfilter
+
+- name: Add br_netfilter into /etc/modules-load.d/kubespray.conf
+  copy:
+    dest: /etc/modules-load.d/kubespray.conf
+    content: |-
+      ### This file is managed by Ansible
+      br-netfilter
+    owner: root
+    group: root
+    mode: 0644
+  when: br_netfilter is defined
+
+
+- name: Enable net.ipv4.ip_forward in sysctl
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_file: /etc/sysctl.d/ipv4-ip_forward.conf
+    state: present
+    reload: yes
+
+- name: Enable net.ipv4.ip_nonlocal_bind in sysctl
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: 1
+    sysctl_file: /etc/sysctl.d/net.ipv4.ip_nonlocal_bind.conf
+    state: present
+    reload: yes
+
+- name: Set bridge-nf-call-{arptables,iptables} to 0
+  sysctl:
+    name: "{{ item }}"
+    state: present
+    value: 0
+    sysctl_file: /etc/sysctl.d/bridge-nf-call.conf
+    reload: yes
+  with_items:
+    - net.bridge.bridge-nf-call-arptables
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.bridge.bridge-nf-call-iptables
+  when: br_netfilter is defined
+  
+- name: 调整 fs.inotify.max_user_watches 参数 in sysctl
+  sysctl:
+    name: fs.inotify.max_user_watches
+    value: 1048576
+    sysctl_file: /etc/sysctl.d/inotify.conf
+    state: present
+    reload: yes
+  
+- name: 为不同节点设置不同的主机名，
+  shell: hostnamectl set-hostname {{NODE_ID}}
+  
+- name: Set sysctl file limiits
+  pam_limits:
+    dest: /etc/security/limits.conf
+    domain: '*'
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  with_items:
+    - { limit_type: 'soft',limit_item: 'nofile', value: '655350' }
+    - { limit_type: 'hard',limit_item: 'nofile', value: '655350'}
+    - { limit_type: 'soft',limit_item: 'nproc', value: '102400' }
+    - { limit_type: 'hard',limit_item: 'nproc', value: '102400' }
+
+- name: 修改系统文件限制
+  sysctl:
+    name: fs.file-max
+    value: 6553560
+    sysctl_set: yes
+    state: present
+    reload: yes

@@ -1,0 +1,7 @@
+- hosts: kube-storage-node
+  gather_facts: yes
+
+- hosts: kube-storage-node
+  roles:
+  - kubernetes/storage-glusterfs
+ 

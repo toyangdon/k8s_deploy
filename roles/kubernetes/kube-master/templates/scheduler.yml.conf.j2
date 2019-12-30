@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ""
+  labels:
+    component: kube-scheduler
+    tier: control-plane
+  name: kube-scheduler
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers:
+  - name: kube-scheduler
+    image: {{BASE_IMAGE_URL}}/{{k8s_scheduler_image}}
+    command:
+      - kube-scheduler
+      - --address=127.0.0.1
+      - --master=http://127.0.0.1:{{ insecure_port }}
+      - --leader-elect=true
+      - --v=2
+      - --alsologtostderr
+      - --logtostderr=false
+      - --log-dir=/data/log/kube-scheduler
+    livenessProbe:
+      failureThreshold: 8
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 10251
+        scheme: HTTP
+      initialDelaySeconds: 15
+      timeoutSeconds: 15
+    resources:
+      requests:
+        cpu: {{ scheduler_cpu_requests }}
+        memory: "{{ scheduler_mem_requests }}"
+      limits:
+        cpu: {{ scheduler_cpu_limit }}
+        memory: "{{ scheduler_mem_limit }}"
+    volumeMounts:
+    - mountPath: /data/log/kube-scheduler
+      name: k8s-log
+  volumes:
+  - hostPath:
+      path: /data/log/kube-scheduler
+      type: DirectoryOrCreate
+    name: k8s-log

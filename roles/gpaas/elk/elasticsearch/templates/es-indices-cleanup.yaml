@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: es-indices-cleanup
+  name: es-indices-cleanup
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: es-indices-cleanup
+  template:
+    metadata:
+      labels:
+        app: es-indices-cleanup
+    spec:
+      containers:
+      - image: {{BASE_IMAGE_URL}}/{{elasticsearch_indices_cleanup_image}}
+        name: es-indices-cleanup-container
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        ports:
+        - containerPort: 80
+          name: port-1
+          protocol: TCP
+        env:
+        - name: "es_index_httpUrl"
+          value: "elasticsearch-service:9200"
+        - name: "es_index_scheduledJob"
+          value: "0 0 1 * * ?"

@@ -1,0 +1,10 @@
+#中铝视拓推送服务部署
+cs_push_enable: true
+cs_push_backend_image: prod/push-server:1.6.0
+cs_push_db_name: uimp_push
+cs_push_db_username: >-
+  {{cs_db_username}}
+cs_push_db_passwd: >-
+  {{cs_db_passwd}}
+cs_push_backend_ingress: >-
+  push.{{cs_dashboard_ingress_top_domain_name}}

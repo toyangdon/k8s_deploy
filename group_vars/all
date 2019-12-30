@@ -1,0 +1,94 @@
+# ---------集群主要参数---------------
+MASTER_PORT: 6443
+MASTER_INSECURE_PORT: 8080
+
+#TLS Bootstrapping 使用的 Token，使用 head -c 16 /dev/urandom | od -An -t x | tr -d ' ' 生成
+BOOTSTRAP_TOKEN: "0a3417df589e82d359ff6fc3d3c90fc0"
+
+# 集群网络插件，目前支持calico
+CLUSTER_NETWORK: "calico"
+
+# 服务网段 (Service CIDR），部署前路由不可达，部署后集群内使用 IP:Port 可达
+SERVICE_CIDR: "10.68.0.0/16"
+
+# POD 网段 (Cluster CIDR），部署前路由不可达，**部署后**路由可达
+CLUSTER_CIDR: "172.20.0.0/16"
+
+# 服务端口范围 (NodePort Range)
+NODE_PORT_RANGE: "80-30000"
+
+# kubernetes 服务 IP (预分配，一般是 SERVICE_CIDR 中第一个IP)
+CLUSTER_KUBERNETES_SVC_IP: "10.68.0.1"
+
+# 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分配)
+CLUSTER_DNS_SVC_IP: "10.68.0.2"
+
+# 集群 DNS 域名
+CLUSTER_DNS_DOMAIN: "cluster.local."
+
+# 集群basic auth 使用的用户名和密码
+BASIC_AUTH_USER: "admin"
+BASIC_AUTH_PASS: "Zlst8888"
+
+#默认二进制文件目录
+bin_dir: "/opt/k8s/bin"
+
+#证书目录
+ca_dir: "/etc/kubernetes/ssl"
+
+#部署目录，即 ansible 工作目录
+base_dir: "/etc/ansible"
+
+#数据目录
+data_dir: "/data"
+
+# 基础镜像
+k8s_pod_infra_container_image: k8s/pause-amd64:3.1
+
+#存储卷类型
+storage_type: glusterfs
+
+#默认主机名，要求唯一，默认规则：主机组名-主机ip最后一段 ，如果hosts文件中不是配置的ip(有可能是域名)，那么就直接取域名
+NODE_ID: >-
+  {{(group_names|reject("match","kube-cluster|kube-node"))|join("-")}}-{{inventory_hostname.split('.')[3]}}
+
+#资源限制
+#生产配置
+system_reserved: >-
+  cpu={{ansible_processor_vcpus * 1000 * 0.05}}m,memory={{ansible_memtotal_mb * 0.05}}Mi,ephemeral-storage=500Mi
+kube_reserved: >-
+  cpu={{ansible_processor_vcpus * 1000 * 0.05}}m,memory={{ansible_memtotal_mb * 0.05}}Mi,ephemeral-storage=500Mi
+eviction_hard: >-
+  memory.available<{{ansible_memtotal_mb * 0.05}}Mi,nodefs.available<5%
+
+node_labels: >-
+  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}
+  {%- for group_name in group_names|reject("match","kube-cluster|kube-node")  -%}node-role.kubernetes.io/{{group_name|replace("kube-","")}}=true{%- if not loop.last-%},{%- endif-%}{%- endfor -%}
+  
+node_taints: >-
+  {%- if NODE_TAINTS is defined -%}{{NODE_TAINTS}},{%- endif -%}
+  {%- for group_name in group_names|reject("match","kube-cluster|kube-node|kube-compute-node|deploy")  -%}node-role.kubernetes.io/{{group_name|replace("kube-","")}}=:NoSchedule{%- if not loop.last-%},{%- endif-%}{%- endfor -%}
+
+#docker insecure registry 如果有多个用逗号分开
+docker_insecure_registry: >-
+  {{BASE_IMAGE_URL}}
+
+#是否部署elk
+deploy_elk: >-
+  {%- if groups['elasticsearch']|length !=0 and groups['logstash']|length !=0 -%}true{%- else -%}false{%- endif -%}
+
+#是否部署监控告警
+deploy_monitor: >-
+  {%- if groups['elasticsearch']|length !=0 -%}true{%- else -%}false{%- endif -%}
+  
+#是否需要为监控告警部署es 。如果不需要部署elk，却需要部署监控告警，因此需要为监控告警单独部署es 
+deploy_es: >-
+  {%- if not deploy_elk and deploy_monitor -%}true{%- else -%}false{%- endif -%}  
+  
+#是否离线
+deploy_offline: false
+
+#是否加载镜像
+load_images: true
+#是否推送镜像
+push_images: true

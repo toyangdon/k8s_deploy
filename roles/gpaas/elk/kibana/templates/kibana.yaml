@@ -1,0 +1,56 @@
+---
+kind: Deployment
+apiVersion: apps/v1beta2
+metadata:
+  labels:
+    elastic-app: kibana
+  name: kibana
+  namespace: uimp-cloud
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      elastic-app: kibana
+  template:
+    metadata:
+      labels:
+        elastic-app: kibana
+    spec:
+      containers:
+        - name: kibana
+          #image: 192.168.10.238/third_part/logstash/logstash-x-pack:6.2.4
+          image: "{{BASE_IMAGE_URL}}/{{ kibana_image }}"
+          ports:
+            - containerPort: 5601
+              protocol: TCP
+          env:
+            - name: "ELASTICSEARCH_URL"
+              #value: "http://elasticsearch-logging:9200"
+              value: "http://elasticsearch-service:9200"
+            #- name: "SERVER_HOST"
+            #  value: "0.0.0.0"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 250Mi
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: kibana
+  name: kibana-service
+  namespace: uimp-cloud
+spec:
+  ports:
+    - port: 5601
+      targetPort: 5601
+      nodePort: 5601
+  selector:
+    elastic-app: kibana
+  type: NodePort

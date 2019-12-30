@@ -1,0 +1,8 @@
+- hosts: harbor
+  gather_facts: yes
+
+- hosts: harbor
+  roles:
+  - { role: kubernetes/harbor}
+  - { role: kubernetes/kube-node , node_role: lb , when: "harbor_deploy_type in ['single-stand-alone','cluster-stand-alone']"}
+  - { role: kubernetes/calico ,  when: "harbor_deploy_type in ['single-stand-alone','cluster-stand-alone']"}

@@ -1,0 +1,15 @@
+- name: 创建数据目录
+  file: name={{es_data_path}}/data state=directory mode=0755 owner=1000 group=1000 recurse=yes
+
+- name: 创建日志目录
+  file: name={{es_data_path}}/logs state=directory  mode=0755 owner=1000 group=1000 recurse=yes
+  
+- name: 修改系统文件限制
+  sysctl:
+    name: vm.max_map_count
+    value: 655360
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- include_tasks : container.yml

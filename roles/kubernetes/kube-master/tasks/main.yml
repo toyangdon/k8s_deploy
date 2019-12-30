@@ -1,0 +1,103 @@
+- name: 下载 kube-master 二进制
+  copy: src={{ base_dir }}/bin/etcd/{{ item }} dest={{ bin_dir }}/{{ item }} mode=0755
+  with_items:
+  - etcdctl
+  
+# 注册变量p，根据p的stat信息判断是否已经生成过kubernetes证书，如果没有，下一步生成证书
+# 如果已经有证书，为了保证整个安装的幂等性，跳过证书生成的步骤
+- name: 读取kubernetes证书stat信息
+  stat: path="/etc/kubernetes/ssl/kubernetes.pem"
+  register: p
+
+- name: 创建 kubernetes 证书签名请求
+  template: src=kubernetes-csr.json.j2 dest={{ ca_dir }}/kubernetes-csr.json
+  when: p.stat.isreg is not defined
+
+- name: 创建 kubernetes 证书和私钥
+  shell: "cd {{ ca_dir }} && {{ bin_dir }}/cfssl gencert \
+        -ca={{ ca_dir }}/ca.pem \
+        -ca-key={{ ca_dir }}/ca-key.pem \
+        -config={{ ca_dir }}/ca-config.json \
+        -profile=kubernetes kubernetes-csr.json | {{ bin_dir }}/cfssljson -bare kubernetes"
+  when: p.stat.isreg is not defined
+  
+- name: 创建 token.csv
+  template: src=token.csv.j2 dest={{ ca_dir }}/token.csv
+
+- name: 创建 basic-auth.csv
+  template: src=basic-auth.csv.j2 dest={{ ca_dir }}/basic-auth.csv
+  
+- name: 创建kubelet静态pod文件目录
+  file: name=/etc/kubernetes/manifests state=directory
+
+##----------etcd部分--------------------------------
+- name: 创建etcd证书目录
+  file: name=/etc/etcd/ssl state=directory
+  
+# 注册变量p，根据p的stat信息判断是否已经生成过etcd证书，如果没有，下一步生成证书
+# 如果已经有etcd证书，为了保证整个安装的幂等性，跳过证书生成的步骤
+- name: 读取etcd证书stat信息
+  stat: path="/etc/etcd/ssl/etcd.pem"
+  register: p
+
+- name: 创建etcd证书请求
+  template: src=etcd-csr.json.j2 dest=/etc/etcd/ssl/etcd-csr.json
+  when: p.stat.isreg is not defined 
+
+- name: 创建 etcd证书和私钥
+  shell: "cd /etc/etcd/ssl && {{ bin_dir }}/cfssl gencert \
+        -ca={{ ca_dir }}/ca.pem \
+        -ca-key={{ ca_dir }}/ca-key.pem \
+        -config={{ ca_dir }}/ca-config.json \
+        -profile=kubernetes etcd-csr.json | {{ bin_dir }}/cfssljson -bare etcd"
+  when: p.stat.isreg is not defined 
+
+- name: 创建etcd工作目录
+  file: name=/data/etcd state=directory
+
+- name: 创建etcd yml文件
+  template: src=etcd.yml.conf.j2 dest=/etc/kubernetes/manifests/etcd.yml
+  tags: upgrade_k8s
+  
+##---------------------------------------------------
+# 创建aggregator proxy相关证书
+- name: 读取aggregator-proxy证书stat信息
+  stat: path="/etc/etcd/ssl/aggregator-proxy.pem"
+  register: p
+  
+- name: 创建 aggregator proxy证书签名请求
+  template: src=aggregator-proxy-csr.json.j2 dest={{ ca_dir }}/aggregator-proxy-csr.json
+  when: p.stat.isreg is not defined
+
+- name: 创建 aggregator-proxy证书和私钥
+  when: p.stat.isreg is not defined
+  shell: "cd {{ ca_dir }} && {{ bin_dir }}/cfssl gencert \
+        -ca={{ ca_dir }}/ca.pem \
+        -ca-key={{ ca_dir }}/ca-key.pem \
+        -config={{ ca_dir }}/ca-config.json \
+        -profile=kubernetes aggregator-proxy-csr.json | {{ bin_dir }}/cfssljson -bare aggregator-proxy"
+        
+        
+- name: 创建kube-apiserver yml文件
+  template: src=apiserver.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-apiserver.yml
+  tags: upgrade_k8s
+  
+- name: 创建audit-policy.yml文件
+  copy: src=audit-policy.yml dest=/etc/kubernetes/audit-policy.yml
+
+- name: 创建kube-controller-manager yml文件
+  template: src=manager.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-controller-manager.yml
+
+- name: 创建kube-scheduler yml文件
+  template: src=scheduler.yml.conf.j2 dest=/etc/kubernetes/manifests/kube-scheduler.yml
+
+#- name: glusterfs客户端安装
+#  yum: name={{data_dir}}/rpm/glusterfs/{{ item }} state=present
+#  with_lines: ls {{data_dir}}/rpm/glusterfs
+#  when: storage_type == "glusterfs"
+  
+#- name: glusterfs客户端安装
+#  yum: name="{{data_dir}}/rpm/glusterfs/{{ item }}" state=present
+#  with_items: "{{ glusterfs_rpms.stdout_lines }}"
+#  # same as with_items: home_dirs.stdout.split()
+#  when: storage_type == "glusterfs"

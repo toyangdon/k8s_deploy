@@ -1,0 +1,68 @@
+
+- hosts: 
+  - elasticsearch
+  - logstash
+  tasks:
+  - name: stop kubelet service
+    shell: "systemctl stop kubelet"
+    ignore_errors: true
+  
+  - name: stop docker service
+    shell: "systemctl stop docker"
+    ignore_errors: true
+
+  - name: umount kubelet 挂载的目录
+    shell: "mount | grep '/data/kubelet'| awk '{print $3}'|xargs umount"
+    ignore_errors: true
+    
+- hosts: 
+  - elasticsearch
+  - logstash
+  tasks:  
+  - name: stop elasticsearch service
+    shell: "systemctl stop elasticsearch"
+    ignore_errors: true  
+    
+
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "{{data_dir}}/kubelet/"
+    - "/etc/kubernetes/"
+    - "/etc/systemd/system/kubelet.service"
+    - "{{bin_dir}}/"
+    - "/etc/elasticsearch/"
+    - "/data/es"
+
+  # 因为calico-kube-controller使用了host网络，相当于使用了docker -net=host，需要
+  # 卸载 /var/run/docker/netns/default
+  - name: 卸载docker 相关fs1
+    mount: path=/var/run/docker/netns/default state=unmounted
+
+  - name: 卸载docker 相关fs2
+    mount: path={{data_dir}}/docker/overlay2 state=unmounted
+
+  - name: 清理目录和文件
+    file: name={{ item }} state=absent
+    with_items:
+    - "/etc/cni/"
+    - "/etc/flannel/"
+    - "/var/run/flannel/"
+    - "/var/log/flannel/"
+    - "{{data_dir}}/docker/"
+    - "/var/run/docker/"
+    - "/etc/systemd/system/docker.service"
+    - "/etc/systemd/system/docker.service.requires/"
+    - "/var/run/calico/"
+    - "/etc/calico/"
+    - "/root/.kube/"
+
+  - name: 清理 iptables
+    shell: "iptables -F && iptables -X \
+	&& iptables -F -t nat && iptables -X -t nat \
+	&& iptables -F -t raw && iptables -X -t raw \
+	&& iptables -F -t mangle && iptables -X -t mangle"
+
+  - name: 清理网络
+    shell: "ip link del docker0; ip link del flannel.1;ip link del cni0;ip link set tunl0 down;ip link del tunl0; systemctl restart network"
+    ignore_errors: true

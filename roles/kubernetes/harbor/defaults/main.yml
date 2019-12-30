@@ -1,0 +1,37 @@
+harbor_ui_image: k8s/harbor-ui:v1.2.0
+harbor_registry_image: k8s/registry:2.6.2-photon
+harbor_db_image: k8s/harbor-db:v1.2.0
+harbor_adminserver_image: k8s/harbor-adminserver:v1.2.0
+harbor_nginx_image: k8s/nginx-photon:1.11.13
+
+harbor_deploy_type: >-
+  {%- if group_names|length == 2 and groups["harbor"]|length == 1 -%}single-stand-alone
+  {%- elif group_names|length == 2 and groups["harbor"]|length > 1 -%}cluster-stand-alone
+  {%- elif group_names|length > 2 and groups["harbor"]|length == 1 -%}single-coexistence
+  {%- endif -%}
+
+#资源请求值与限制值
+harbor_ui_cpu_requests:  10m
+harbor_ui_cpu_limit: 500m
+harbor_ui_mem_requests: 50Mi
+harbor_ui_mem_limit: 200Mi
+
+harbor_nginx_cpu_requests:  10m
+harbor_nginx_cpu_limit: 100m
+harbor_nginx_mem_requests: 10Mi
+harbor_nginx_mem_limit: 100Mi
+
+harbor_mysql_cpu_requests:  50m
+harbor_mysql_cpu_limit: 200m
+harbor_mysql_mem_requests: 500Mi
+harbor_mysql_mem_limit: 1Gi
+
+harbor_registry_cpu_requests:  10m
+harbor_registry_cpu_limit: 200m
+harbor_registry_mem_requests: 50Mi
+harbor_registry_mem_limit: 1Gi
+
+harbor_adminserver_cpu_requests:  10m
+harbor_adminserver_cpu_limit: 100m
+harbor_adminserver_mem_requests: 50Mi
+harbor_adminserver_mem_limit: 200Mi

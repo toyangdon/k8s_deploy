@@ -1,0 +1,21 @@
+- hosts:
+  - lb
+  - kube-master
+  - kube-node
+  gather_facts: yes
+  
+#先lb节点
+- hosts:
+  - lb
+  roles:
+  - kubernetes/kube-node
+#再master节点
+- hosts:
+  - kube-master
+  roles:
+  - kubernetes/kube-node
+#最后计算节点
+- hosts:
+  - kube-node
+  roles:
+  - kubernetes/kube-node

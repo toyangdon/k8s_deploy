@@ -14,7 +14,7 @@
   when: p.stat.isreg is not defined
 
 - name: 创建 kubernetes 证书和私钥
-  shell: "{{ cfssl_cmd }} cfssl gencert \
+  shell: "{{ cfssl_cmd }} 'cfssl gencert \
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \

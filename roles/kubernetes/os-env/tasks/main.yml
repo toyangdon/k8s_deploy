@@ -1,12 +1,12 @@
-- name: 系统版本检测
-  fail: 
-    msg: "系统要求为CentOS 7"
-  when: ansible_distribution != "CentOS" or ansible_distribution_major_version != "7"
+#- name: 系统版本检测
+#  fail: 
+#    msg: "系统要求为CentOS 7"
+#  when: ansible_distribution != "CentOS" or ansible_distribution_major_version != "7"
 
-- name: 系统内核检测
-  fail: 
-    msg: "内核版本需要大于4.0"
-  when: not (ansible_kernel | match("4.*.x86_64"))
+#- name: 系统内核检测
+#  fail: 
+#    msg: "内核版本需要大于4.0"
+#  when: not (ansible_kernel | match("4.*.x86_64"))
 
 - block:
     - name: 删除centos默认安装

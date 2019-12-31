@@ -48,7 +48,7 @@
 1. 下载部署文件到部署节点的/etc/ansible目录下
 2. 安装ansible
 **CentOS**   
-`rpm -i bin/ansible/*.rpm`
+`rpm -i bin/ansible/*.rpm`  
 **Ubuntu Kylin**  
 向`/etc/apt/sources.list`文件中添加以下行  
 `deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main`  
@@ -56,12 +56,11 @@
 `apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367`  
 `apt update`  
 `apt install ansible`  
-##
 3. 配置集群安装信息  
 `cp -f example/hosts.m-masters.example hosts`  
-**根据实际情况修改`hosts`文件**
+**根据实际情况修改`hosts`文件**  
 4. 配置ssh免密码  
-`sh tools/ssh-key-copy.sh root ${passwd} #请输入实际的root用户密码` 
+`sh tools/ssh-key-copy.sh root ${passwd} #请输入实际的root用户密码`  
 ***Ubuntu Kylin 报错解决`Syntax error: Bad fd number`***  
 `mv /bin/sh /bin/sh.orig`  
 `ln -s /bin/bash /bin/sh`  
@@ -71,8 +70,9 @@
 # 分步安装
 `playbooks`目录提供分步安装的相关playbook，主要分为两大块`kubernetes`和`gpaas`
 ## `kubernetes` 部署
-1. `ansible-playbook playbooks/kubernetes/01.prepare.yml` 服务器通用配置，生成并分发集群所需相关证书
-2. `ansible-playbook playbooks/kubernetes/02.docker.yml` 在所有主机上安装并启动docker服务
+1. `ansible-playbook playbooks/kubernetes/00.check.yml` 检查集群服务器
+1. `ansible-playbook playbooks/kubernetes/01.docker.yml` 在所有主机上安装并启动docker服务
+2. `ansible-playbook playbooks/kubernetes/02.prepare.yml` 服务器通用配置，生成并分发集群所需相关证书
 3. `ansible-playbook playbooks/kubernetes/03.harbor.yml` 部署harbor节点，安装并启动harbor服务（可选）
 4. `ansible-playbook playbooks/kubernetes/04.lb.yml` 准备lb节点所需的相关安装文件，包括keepalived和haproxy
 5. `ansible-playbook playbooks/kubernetes/05.kube-master.yml` 准备master节点所需的相关安装文件

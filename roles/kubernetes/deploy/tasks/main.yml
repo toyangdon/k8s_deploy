@@ -23,18 +23,18 @@
 
 - name: 生成 CA 证书和私钥
   when: p.stat.isreg is not defined
-  shell: "cd {{ ca_dir }} && {{ cfssl_cmd }} 'gencert -initca ca-csr.json | cfssljson  -bare ca'" 
+  shell: "cd {{ ca_dir }} && {{ cfssl_cmd }} 'cfssl gencert -initca ca-csr.json | cfssljson  -bare ca'" 
 
 #----------- 创建kubectl kubeconfig文件: /root/.kube/config
 - name: 准备kubectl使用的admin 证书签名请求
   template: src=admin-csr.json.j2 dest={{ ca_dir }}/admin-csr.json
 
 - name: 创建 admin证书与私钥
-  shell: "cd {{ ca_dir }} && {{ cfssl }} gencert \
-        -ca={{ ca_dir }}/ca.pem \
-        -ca-key={{ ca_dir }}/ca-key.pem \
-        -config={{ ca_dir }}/ca-config.json \
-        -profile=kubernetes admin-csr.json | {{ cfssljson }} -bare admin"
+  shell: "{{ cfssl_cmd }} 'cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config=ca-config.json \
+        -profile=kubernetes admin-csr.json | {{ cfssljson }} -bare admin'"
 # 设置集群参数，指定CA证书和apiserver地址
 - name: 设置集群参数
   shell: "{{ bin_dir }}/kubectl config set-cluster kubernetes \

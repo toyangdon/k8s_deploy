@@ -4,7 +4,6 @@
   - "{{ bin_dir }}"
   - "{{ ca_dir }}"
   - /root/.kube
-  - /etc/docker
   - "{{data_dir}}/log/kubelet/"
   - "{{data_dir}}/log/kube-proxy/"
 

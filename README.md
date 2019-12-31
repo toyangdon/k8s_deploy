@@ -46,13 +46,25 @@
 
 # 快速安装
 1. 下载部署文件到部署节点的/etc/ansible目录下
-2. 安装ansible  
+2. 安装ansible
+**CentOS**   
 `rpm -i bin/ansible/*.rpm`
+**Ubuntu Kylin**  
+向`/etc/apt/sources.list`文件中添加以下行  
+`deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main`  
+执行  
+`apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367`  
+`apt update`  
+`apt install ansible`  
+##
 3. 配置集群安装信息  
 `cp -f example/hosts.m-masters.example hosts`  
 **根据实际情况修改`hosts`文件**
 4. 配置ssh免密码  
 `sh tools/ssh-key-copy.sh root ${passwd} #请输入实际的root用户密码` 
+***Ubuntu Kylin 报错解决`Syntax error: Bad fd number`***  
+`mv /bin/sh /bin/sh.orig`  
+`ln -s /bin/bash /bin/sh`  
 5. 执行一键安装  
 `ansible-playbook setup.yml`
 

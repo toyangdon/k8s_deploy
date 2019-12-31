@@ -1,5 +1,0 @@
-- hosts: 
-  - kube-cluster
-  - harbor
-  roles:
-  - kubernetes/docker

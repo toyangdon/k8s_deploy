@@ -1,0 +1,10 @@
+- hosts: deploy
+  roles:
+  - kubernetes/deploy
+
+# 集群节点的公共配置任务
+- hosts:
+  - kube-cluster
+  - deploy
+  roles:
+  - kubernetes/prepare

@@ -92,3 +92,10 @@ deploy_offline: false
 load_images: true
 #是否推送镜像
 push_images: true
+
+#工具镜像（证书）
+gw_tools_image: toyangdon/gw-tools:1.0
+
+#证书生成命令
+cfssl_cmd: "docker run --rm -v {{ ca_dir }}:/workdir {{ gw_tools_image }} sh -c"
+

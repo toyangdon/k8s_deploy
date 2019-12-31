@@ -1,6 +1,8 @@
-- import_playbook: 01.prepare.yml
+- import_playbook: 00.check.yml
 
-- import_playbook: 02.docker.yml
+- import_playbook: 01.docker.yml
+
+- import_playbook: 02.prepare.yml
 
 - import_playbook: 03.harbor.yml
 

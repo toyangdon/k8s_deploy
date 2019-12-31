@@ -14,11 +14,11 @@
   when: p.stat.isreg is not defined
 
 - name: 创建 kubernetes 证书和私钥
-  shell: "cd {{ ca_dir }} && {{ bin_dir }}/cfssl gencert \
-        -ca={{ ca_dir }}/ca.pem \
-        -ca-key={{ ca_dir }}/ca-key.pem \
-        -config={{ ca_dir }}/ca-config.json \
-        -profile=kubernetes kubernetes-csr.json | {{ bin_dir }}/cfssljson -bare kubernetes"
+  shell: "{{ cfssl_cmd }} cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config=ca-config.json \
+        -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes'"
   when: p.stat.isreg is not defined
   
 - name: 创建 token.csv
@@ -45,11 +45,11 @@
   when: p.stat.isreg is not defined 
 
 - name: 创建 etcd证书和私钥
-  shell: "cd /etc/etcd/ssl && {{ bin_dir }}/cfssl gencert \
-        -ca={{ ca_dir }}/ca.pem \
-        -ca-key={{ ca_dir }}/ca-key.pem \
-        -config={{ ca_dir }}/ca-config.json \
-        -profile=kubernetes etcd-csr.json | {{ bin_dir }}/cfssljson -bare etcd"
+  shell: "{{ cfssl_cmd }} 'cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config=ca-config.json \
+        -profile=kubernetes etcd-csr.json | cfssljson -bare etcd' && cp -f {{ ca_dir }}/etcd* /etc/etcd/ssl/"
   when: p.stat.isreg is not defined 
 
 - name: 创建etcd工作目录
@@ -71,11 +71,11 @@
 
 - name: 创建 aggregator-proxy证书和私钥
   when: p.stat.isreg is not defined
-  shell: "cd {{ ca_dir }} && {{ bin_dir }}/cfssl gencert \
-        -ca={{ ca_dir }}/ca.pem \
-        -ca-key={{ ca_dir }}/ca-key.pem \
-        -config={{ ca_dir }}/ca-config.json \
-        -profile=kubernetes aggregator-proxy-csr.json | {{ bin_dir }}/cfssljson -bare aggregator-proxy"
+  shell: "{{ cfssl_cmd }} 'cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config=ca-config.json \
+        -profile=kubernetes aggregator-proxy-csr.json | cfssljson -bare aggregator-proxy'"
         
         
 - name: 创建kube-apiserver yml文件

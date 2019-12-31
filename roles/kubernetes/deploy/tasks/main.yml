@@ -34,7 +34,7 @@
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -profile=kubernetes admin-csr.json | {{ cfssljson }} -bare admin'"
+        -profile=kubernetes admin-csr.json | cfssljson -bare admin'"
 # 设置集群参数，指定CA证书和apiserver地址
 - name: 设置集群参数
   shell: "{{ bin_dir }}/kubectl config set-cluster kubernetes \
@@ -82,11 +82,11 @@
   template: src=kube-proxy-csr.json.j2 dest={{ ca_dir }}/kube-proxy-csr.json
 
 - name: 创建 kube-proxy证书与私钥
-  shell: "cd {{ ca_dir }} && {{ cfssl }} gencert \
-        -ca={{ ca_dir }}/ca.pem \
-        -ca-key={{ ca_dir }}/ca-key.pem \
-        -config={{ ca_dir }}/ca-config.json \
-        -profile=kubernetes kube-proxy-csr.json | {{ cfssljson }} -bare kube-proxy"
+  shell: "{{ cfssl_cmd }} 'cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config=ca-config.json \
+        -profile=kubernetes kube-proxy-csr.json | cfssljson  -bare kube-proxy'"
 
 - name: 设置集群参数
   shell: "{{ bin_dir }}/kubectl config set-cluster kubernetes \

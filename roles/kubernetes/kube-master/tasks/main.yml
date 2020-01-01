@@ -41,7 +41,7 @@
   register: p
 
 - name: 创建etcd证书请求
-  template: src=etcd-csr.json.j2 dest=/etc/etcd/ssl/etcd-csr.json
+  template: src=etcd-csr.json.j2 dest=/etc/kubernetes/ssl/etcd-csr.json
   when: p.stat.isreg is not defined 
 
 - name: 创建 etcd证书和私钥

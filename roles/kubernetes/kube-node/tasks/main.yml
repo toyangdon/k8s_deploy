@@ -48,13 +48,13 @@
     template: src=kubelet-csr.json.j2 dest={{ ca_dir }}/kubelet-csr.json
   
   - name: 创建kubelet密钥
-    shell: "{{cfssl_cmd }} `cfssl gencert \
+    shell: "{{cfssl_cmd }} 'cfssl gencert \
       -ca=ca.pem \
       -ca-key=ca-key.pem \
       -config=ca-config.json \
       -hostname={{ inventory_hostname }},{{ MASTER_IP }} \
       -profile=kubernetes \
-      kubelet-csr.json | cfssljson -bare kubelet`"
+      kubelet-csr.json | cfssljson -bare kubelet'"
     
   - name: 创建kubelet.kubeconfig文件
     shell: "{{ bin_dir }}/kubectl config set-cluster kubernetes \

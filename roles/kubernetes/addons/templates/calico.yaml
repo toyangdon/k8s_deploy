@@ -73,7 +73,9 @@ metadata:
 data:
   # Configure this with the location of your etcd cluster.
   etcd_endpoints: "{% for node in groups['kube-master'] %}https://{{ node }}:2379{% if not loop.last %},{% endif %}{% endfor %}"
-  
+
+  # Configure the Calico backend to use.
+  calico_backend: "bird"
 
   # The CNI network configuration to install on each node.
   cni_network_config: |-

@@ -43,7 +43,7 @@ base_dir: "/etc/ansible"
 data_dir: "/data"
 
 # 基础镜像
-k8s_pod_infra_container_image: k8s/pause-amd64:3.1
+k8s_pod_infra_container_image: toyangdon/pause-arm64:3.1
 
 #存储卷类型
 storage_type: glusterfs
@@ -54,16 +54,17 @@ NODE_ID: >-
 
 #资源限制
 #生产配置
+#KUBE_RESERVED: "{'cpu':'200m','memory':'500Mi','ephemeral-storage':'1Gi'}"
 system_reserved: >-
-  cpu={{ansible_processor_vcpus * 1000 * 0.05}}m,memory={{ansible_memtotal_mb * 0.05}}Mi,ephemeral-storage=500Mi
+  {'cpu': '{{ ansible_processor_vcpus * 1000 * 0.05 }}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
 kube_reserved: >-
-  cpu={{ansible_processor_vcpus * 1000 * 0.05}}m,memory={{ansible_memtotal_mb * 0.05}}Mi,ephemeral-storage=500Mi
+  {'cpu': '{{ansible_processor_vcpus * 1000 * 0.05}}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
 eviction_hard: >-
-  memory.available<{{ansible_memtotal_mb * 0.05}}Mi,nodefs.available<5%
+  {'memory.available': '{{ansible_memtotal_mb * 0.05}}Mi','nodefs.available':'5%','imagefs.available':'15%','nodefs.inodesFree': '5%'}
 
 node_labels: >-
   {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}
-  {%- for group_name in group_names|reject("match","kube-cluster|kube-node")  -%}node-role.kubernetes.io/{{group_name|replace("kube-","")}}=true{%- if not loop.last-%},{%- endif-%}{%- endfor -%}
+  {%- for group_name in group_names|reject("match","kube-cluster|kube-node")  -%}node.kubernetes.io/{{group_name|replace("kube-","")}}=true{%- if not loop.last-%},{%- endif-%}{%- endfor -%}
   
 node_taints: >-
   {%- if NODE_TAINTS is defined -%}{{NODE_TAINTS}},{%- endif -%}

@@ -5,3 +5,7 @@ node_role: >-
   {%-elif "kube-master" in group_names -%}master
   {%-else-%}compute
   {%-endif-%}
+#kubelet 工作目录
+kubelet_dir: >-
+ {{data_dir}}/kubelet
+max_pods: 110

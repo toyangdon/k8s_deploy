@@ -16,6 +16,9 @@ spec:
     - "-c"
     - 'exec /usr/local/bin/etcd --name={{ NODE_ID }} --cert-file=/etc/etcd/ssl/etcd.pem --key-file=/etc/etcd/ssl/etcd-key.pem --peer-cert-file=/etc/etcd/ssl/etcd.pem --peer-key-file=/etc/etcd/ssl/etcd-key.pem --trusted-ca-file={{ ca_dir }}/ca.pem --peer-trusted-ca-file={{ ca_dir }}/ca.pem --initial-advertise-peer-urls=https://{{ inventory_hostname }}:2380 --listen-peer-urls=https://{{ inventory_hostname }}:2380 --listen-client-urls=https://{{ inventory_hostname }}:2379,http://127.0.0.1:2379 --advertise-client-urls=https://{{ inventory_hostname }}:2379 --heartbeat-interval={{ETCD_HEARTBEAT_INTERVAL}} --election-timeout={{ETCD_ELECTION_TIMEOUT}} --initial-cluster-token=etcd-cluster-0 --initial-cluster={% for node in groups['kube-master'] %}{{ hostvars[node]['NODE_ID'] }}=https://{{ node }}:2380{% if not loop.last %},{% endif %}{% endfor %} --initial-cluster-state=new --data-dir=/data/etcd  1>>/data/log/etcd.log 2>&1'
     image: {{BASE_IMAGE_URL}}/{{k8s_etcd_image}}
+    env:
+    - name: ETCD_UNSUPPORTED_ARCH
+      value: "arm64"
     livenessProbe:
       failureThreshold: 8
       httpGet:

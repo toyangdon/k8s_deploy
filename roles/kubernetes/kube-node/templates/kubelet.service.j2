@@ -5,9 +5,14 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory={{data_dir}}/kubelet
+WorkingDirectory={{kubelet_dir}}
+ExecStartPre=/bin/mount -o remount,rw '/sys/fs/cgroup'
+ExecStartPre=/bin/mkdir -p /sys/fs/cgroup/cpuset/system.slice/kubelet.service
+ExecStartPre=/bin/mkdir -p /sys/fs/cgroup/hugetlb/system.slice/kubelet.service
+ExecStartPre=/bin/mkdir -p /sys/fs/cgroup/memory/system.slice/kubelet.service
+ExecStartPre=/bin/mkdir -p /sys/fs/cgroup/pids/system.slice/kubelet.service
 ExecStart={{ bin_dir }}/kubelet \
-  --address={{ inventory_hostname }} \
+  --config={{kubelet_dir}}/config.yaml \
   --hostname-override={{ NODE_ID }} \
   --node-ip={{ inventory_hostname }} \
   --pod-infra-container-image={{BASE_IMAGE_URL}}/{{ k8s_pod_infra_container_image }} \
@@ -16,35 +21,18 @@ ExecStart={{ bin_dir }}/kubelet \
 {% endif %}
   --pod-manifest-path=/etc/kubernetes/manifests \
   --kubeconfig=/etc/kubernetes/kubelet.kubeconfig \
-  --anonymous-auth=false \
-  --authorization-mode=Webhook \
   --authentication-token-webhook \
-  --client-ca-file={{ca_dir}}/ca.pem \
-  --cert-dir={{ ca_dir }} \
   --network-plugin=cni \
   --cni-conf-dir=/etc/cni/net.d \
   --cni-bin-dir={{ bin_dir }} \
-  --cluster-dns={{ CLUSTER_DNS_SVC_IP }} \
-  --cluster-domain={{ CLUSTER_DNS_DOMAIN }} \
-  --hairpin-mode hairpin-veth \
-  --allow-privileged=true \
-  --eviction-hard={{eviction_hard}} \
-  --system-reserved={{system_reserved}} \
-  --kube-reserved={{kube_reserved}} \
   --node-labels={{node_labels}} \
   --register-with-taints={{node_taints}} \
   --root-dir={{data_dir}}/kubelet \
   --log-dir={{data_dir}}/log/kubelet \
   --logtostderr=false \
-  --rotate-certificates \
   --feature-gates=RotateKubeletClientCertificate=true,RotateKubeletServerCertificate=true \
   --docker-root={{data_dir}}/docker \
   --v=2
-#kubelet cAdvisor 默认在所有接口监听 4194 端口的请求, 以下iptables限制内网访问
-#ExecStartPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT
-#ExecStartPost=/sbin/iptables -A INPUT -s 172.16.0.0/12 -p tcp --dport 4194 -j ACCEPT
-#ExecStartPost=/sbin/iptables -A INPUT -s 192.168.0.0/16 -p tcp --dport 4194 -j ACCEPT
-#ExecStartPost=/sbin/iptables -A INPUT -p tcp --dport 4194 -j DROP
 Restart=always
 RestartSec=5
 

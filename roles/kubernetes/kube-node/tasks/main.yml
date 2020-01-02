@@ -87,6 +87,10 @@
 - name: 创建kubelet的systemd unit文件
   template: src=kubelet.service.j2 dest=/etc/systemd/system/kubelet.service
   tags: upgrade_k8s
+  
+- name: 创建kubelet的配置文件
+  template: src=kubelet-config.yaml.j2 dest={{kubelet_dir}}/config.yaml
+  tags: upgrade_k8s
 
 - name: restart service kubelet
   systemd:
@@ -139,17 +143,18 @@
     
   - name: 下载 glusterfs rpm包
     copy: src={{ base_dir }}/bin/glusterfs dest={{data_dir}}/rpm mode=0755
+    when: ansible_distribution == "CentOS"
     
   - name: glusterfs客户端离线安装
     shell: rpm -i --force {{data_dir}}/rpm/glusterfs/*.rpm
-    when: storage_type == "glusterfs" and deploy_offline
+    when: storage_type == "glusterfs" and deploy_offline and ansible_distribution == "CentOS"
     
   - name: glusterfs客户端在线安装
     yum: name={{ item }} state=present
     with_items:
     - glusterfs
     - glusterfs-fuse
-    when: storage_type == "glusterfs" and not deploy_offline
+    when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"
   when: node_role != "lb"
   
 ##-------日志清理部分------------------------------------

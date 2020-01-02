@@ -18,7 +18,6 @@ spec:
       - --bind-address=0.0.0.0
       - --secure-port={{ secure_port }}
       - --insecure-port={{ insecure_port }}
-      - --admission-control=Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,ResourceQuota
       - --authorization-mode=Node,RBAC
       - --enable-bootstrap-token-auth=true
       - --insecure-bind-address=0.0.0.0

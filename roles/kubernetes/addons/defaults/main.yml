@@ -1,28 +1,26 @@
-k8s_calico_image: "k8s/node:v2.6.7"
-k8s_cni_image: "k8s/cni:v1.11.2"
-k8s_calico_controllers_image: "k8s/kube-controllers:v1.0.3"
-k8s_dns_image: "k8s/k8s-dns-kube-dns-amd64:1.14.8"
-k8s_dnsmasq_image: "k8s/k8s-dns-dnsmasq-nanny-amd64:1.14.8"
-k8s_dnssidecar_image: "k8s/k8s-dns-sidecar-amd64:1.14.8"
-k8s_dashboard_image: "k8s/kubernetes-dashboard-amd64:v1.8.3"
-k8s_traefik_image: "k8s/traefik:1.5"
-k8s_heapster_image: "k8s/heapster-amd64:v1.5.0"
-k8s_addon_resizer_image: "k8s/addon-resizer:1.7"
-k8s_influxdb_image: "k8s/heapster-influxdb-amd64:v1.3.3"
-k8s_grafana_image: "k8s/heapster-grafana-amd64:v4.4.3"
-k8s_kube_proxy_image: "k8s/kube-proxy:v1.10.2"
+k8s_calico_image: "calico/node:v3.3.1"
+k8s_cni_image: "calico/cni:v3.3.1"
+k8s_calico_controllers_image: "calico/kube-controllers:v3.3.1"
+k9s_coredns_image: "coredns/coredns:1.6.2"
+k8s_dashboard_image: "toyangdon/kubernetes-dashboard-arm64:1.10.1"
+k8s_traefik_image: "library/traefik:v2.1.1"
+#k8s_heapster_image: "k8s/heapster-amd64:v1.5.0"
+k8s_addon_resizer_image: "toyangdon/addon-resizer-arm64:1.8.4"
+#k8s_influxdb_image: "k8s/heapster-influxdb-amd64:v1.3.3"
+#k8s_grafana_image: "k8s/heapster-grafana-amd64:v4.4.3"
+k8s_kube_proxy_image: "toyangdon/kube-proxy-arm64:v1.16.4"
 #glusterfs
 k8s_gluster_image: k8s/gluster-centos:3.13.2
 k8s_heketi_image: k8s/heketi:6.0
 
 #非必选镜像
-k8s_metrics_server_image: "k8s/metrics-server-amd64:v0.2.0"
+k8s_metrics_server_image: "toyangdon/metrics-server-arm64:v0.3.4"
 #k8s_cluster_proportional_autoscaler_image=k8s/cluster-proportional-autoscaler-amd64:1.1.2
-k8s_node_problem_detector_image: "k8s/node-problem-detector:v0.4.1"
-kube_state_metrics_image: k8s/kube-state-metrics:v1.4.0
+k8s_node_problem_detector_image: "toyangdon/node-problem-detector-arm64:v0.8.0"
+kube_state_metrics_image: toyangdon/kube-state-metrics-arm64:v1.9.0
 
 #openvpn
-openvpn_image: base/openvpn:3.1
+openvpn_image: toyangdon/openvpn-arm:20191120
 
 #资源请求值与限制值
 calico_node_cpu_requests:  50m
@@ -40,10 +38,6 @@ kubeproxy_cpu_limit: 200m
 kubeproxy_mem_requests: 50Mi
 kubeproxy_mem_limit: 400Mi
 
-kubedns_cpu_requests:  10m
-kubedns_cpu_limit: 200m
-kubedns_mem_requests: 20Mi
-kubedns_mem_limit: 500Mi
 
 heapster_cpu_requests: 50m
 heapster_cpu_limit: 100m

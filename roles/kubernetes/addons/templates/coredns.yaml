@@ -98,7 +98,7 @@ spec:
         beta.kubernetes.io/os: linux
       containers:
       - name: coredns
-        image: {{BASE_IMAGE_URL}}/{{k9s_coredns_image}}
+        image: {{BASE_IMAGE_URL}}/{{k8s_coredns_image}}
         imagePullPolicy: IfNotPresent
         resources:
           limits:

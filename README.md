@@ -1,52 +1,39 @@
 # 说明
-容器云部署脚本中包括了kubernetes底层组件、harbor、elfk、metrickbeat、cs容器云组件、gitlab等一系列服务的安装。采用ansbile脚本实现自动安装，运维人员需要对ansible工具有一定简单了解。主要服务基本实现全容器化、k8s化部署，可以通过kubernetes dashboard监控到所有容器服务；部署脚本基于centos 7，要求内核版本为4以上；既提供一键快速安装方式，也提供分步执行安装方式。
+*部署脚本于安装arm版kubernetes集群。*  
+容器云部署脚本中包括了kubernetes底层组件、harbor、elfk等一系列服务的安装。采用ansbile脚本实现自动安装，运维人员需要对ansible工具有一定简单了解。主要服务基本实现全容器化、k8s化部署，可以通过kubernetes dashboard监控到所有容器服务；部署脚本基于centos 7 或者kylin 4.0.2，要求内核版本为4以上；既提供一键快速安装方式，也提供分步执行安装方式。
 # 组件版本
 | 名称                    | 版本号       | 备注     |
 |-------------------------|--------------|----------|
 | Kernel                  | 4以上        |          |
-| kube-apiserver          | 1.10.2       |          |
-| kube-controller-manager | 1.10.2       |          |
-| kube-scheduler          | 1.10.2       |          |
-| kube-proxy              | 1.10.2       |          |
-| kubelet                 | 1.10.2       |          |
-| etcd                    | 3.1.12       |          |
-| calico                  | 2.6.7        |          |
-| docker                  | 17.06.2-ce   |          |
-| kubedns                 | 1.14.8       |          |
-| heapster                | 1.5.0        |          |
-| kubernets-dashboard     | 1.8.3        |          |
-| traefik                 | 1.5.0        |          |
-| influxdb                | 1.3.3        |          |
-| grafana                 | 4.4.3        |          |
+| kube-apiserver          | 1.16.4       |          |
+| kube-controller-manager | 1.16.4       |          |
+| kube-scheduler          | 1.16.4       |          |
+| kube-proxy              | 1.16.4       |          |
+| kubelet                 | 1.16.4       |          |
+| etcd                    | 3.3.15       |          |
+| calico                  | 3.3.1        |          |
+| docker                  | 18.06.3-ce   |          |
+| coredns                 | 1.6.2        |          |
+| kubernets-dashboard     | 1.10.1       |          |
+| traefik                 | 2.1.1        |          |
 | pause                   | 3.1          |          |
 | elasticsearch           | 6.2.4        |          |
 | filebeat                | 6.2.4        |          |
 | logstash-x-pack         | 6.2.4        |          |
 | kibana-x-pack           | 6.2.4        |          |
-| metricbeat              | 6.2.3        |          |
-| keepalived              | 1.3.9-r2     |          |
-| Haproxy                 | 1.8.9-alpine |          |
+| keepalived              | 2.0.19-r0    |          |
+| Haproxy                 | 2.1.2        |          |
 | Harbor相关              | v1.2.0       |          |
 | gluster                 | 3.13.2       |          |
 | heketi                  | 6.0          |          |
 | metrics-server          | v0.2.0       |          |
 | node-problem-detector   | v0.4.1       |          |
 | kube-state-metrics      | v1.4.0       |          |
-| mysql                   | 5.7.23       |          |
-| cs-uimp-cloud-frontend  | 1.6.0        |          |
-| cs-uimp-cloud-ccapi     | 1.6.0        |          |
-| monitor-service         | 1.6.0        | 告警服务 |
-| cs-uimp-cloud-push      | 1.6.0        | 推送服务 |
-| cs-uimp-cloud-auth2     | 1.6.0        | 认证服务 |
-| cs-inspect              | 1.6.0        | 巡检服务 |
-| redis                   | 4.0.2        |          |
-| gitlab                  | 8.16.3       |          |
-| postgresql              | 9.5-3        |          |
-| Openvpn                 | 3.1          |          |
+| Openvpn                 | 2.1          |          |
 
 # 快速安装
-1. 下载部署文件到部署节点的/etc/ansible目录下
-2. 安装ansible
+1. 下载部署文件到部署节点的/etc/ansible目录下  
+2. 安装ansible  
 **CentOS**   
 `rpm -i bin/ansible/*.rpm`  
 **Ubuntu Kylin**  
@@ -55,7 +42,7 @@
 执行  
 `apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367`  
 `apt update`  
-`apt install ansible`  
+`apt install -y ansible`  
 3. 配置集群安装信息  
 `cp -f example/hosts.m-masters.example hosts`  
 **根据实际情况修改`hosts`文件**  

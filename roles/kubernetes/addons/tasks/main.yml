@@ -23,21 +23,21 @@
 - name: 部署 kube-proxy
   shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kube-proxy.yaml"
   
-- name: 创建 kubedns yaml文件
-  template: src=kubedns.yaml dest={{ base_dir }}/manifests/kubedns.yaml
+- name: 创建 coredns yaml文件
+  template: src=coredns.yaml dest={{ base_dir }}/manifests/coredns.yaml
   
-- name: 部署 kubedns
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kubedns.yaml"
+- name: 部署 coredns
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/coredns.yaml"
   
 - name: 设置kubectl 拥有访问kubelet api 的权限
   shell: "{{bin_dir}}/kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin"  
   ignore_errors: true
 
-- name: 导入gfs tasks
-  include_tasks : glusterfs.yml  
+#- name: 导入gfs tasks
+# include_tasks : glusterfs.yml  
   
 - name: 创建 dns-horizontal-autoscaler.yaml文件
-  template: src=kubedns.yaml dest={{ base_dir }}/manifests/dns-horizontal-autoscaler.yaml
+  template: src=dns-horizontal-autoscaler.yaml dest={{ base_dir }}/manifests/dns-horizontal-autoscaler.yaml
   when: k8s_cluster_proportional_autoscaler_image is defined
   
 - name: 部署 dns-horizontal-autoscaler
@@ -45,26 +45,26 @@
   when: k8s_cluster_proportional_autoscaler_image is defined
   
 - name: 创建 node-problem-detector.yaml文件
-  template: src=kubedns.yaml dest={{ base_dir }}/manifests/node-problem-detector.yaml
+  template: src=node-problem-detector.yaml dest={{ base_dir }}/manifests/node-problem-detector.yaml
   when: k8s_node_problem_detector_image is defined
   
 - name: 部署 node-problem-detector
   shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/node-problem-detector.yaml"
   when: k8s_node_problem_detector_image is defined
   
-- name: 创建 metrics_server.yaml文件
-  template: src=kubedns.yaml dest={{ base_dir }}/manifests/metrics_server.yaml
-  when: k8s_metrics_server is defined
+- name: 创建 metrics-server.yaml文件
+  template: src=metrics-server.yaml dest={{ base_dir }}/manifests/metrics-server.yaml
+  when: k8s_metrics_server_image is defined
   
-- name: 部署 node-problem-detector
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/metrics_server.yaml"
-  when: k8s_metrics_server is defined
+- name: 部署 metrics-server
+  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/metrics-server.yaml"
+  when: k8s_metrics_server_image is defined
     
-- name: 创建 monitor yaml文件
-  template: src=monitor.yaml dest={{ base_dir }}/manifests/monitor.yaml
-  
-- name: 部署 monitor
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/monitor.yaml"
+#- name: 创建 monitor yaml文件
+#  template: src=monitor.yaml dest={{ base_dir }}/manifests/monitor.yaml
+#  
+#- name: 部署 monitor
+#  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/monitor.yaml"
   
 - name: 创建 kubernetes-dashboard yaml文件
   template: src=kubernetes-dashboard.yaml dest={{ base_dir }}/manifests/kubernetes-dashboard.yaml
@@ -96,10 +96,10 @@
 - name: 部署 kube-state-metrics.yaml
   shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/kube-state-metrics.yaml"
   
-- name: 修改influxdb 中的数据保存策略（90天）
-  shell: "curl 'http://{{MASTER_IP}}:6063/query?db=k8s&q=ALTER%20RETENTION%20POLICY%20default%20ON%20%22k8s%22DURATION%2090d&epoch=ms'"
-  register: influxdb_result
-  until: '"ON k8s DURATION 90d" in influxdb_result.stdout'
-  retries: 50
-  delay: 10
-  when: not ansible_check_mode
+#- name: 修改influxdb 中的数据保存策略（90天）
+#  shell: "curl 'http://{{MASTER_IP}}:6063/query?db=k8s&q=ALTER%20RETENTION%20POLICY%20default%20ON%20%22k8s%22DURATION%2090d&epoch=ms'"
+#  register: influxdb_result
+#  until: '"ON k8s DURATION 90d" in influxdb_result.stdout'
+#  retries: 50
+#  delay: 10
+#  when: not ansible_check_mode

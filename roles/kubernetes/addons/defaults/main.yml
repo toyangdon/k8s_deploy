@@ -1,11 +1,12 @@
 k8s_calico_image: "calico/node:v3.3.1"
 k8s_cni_image: "calico/cni:v3.3.1"
 k8s_calico_controllers_image: "calico/kube-controllers:v3.3.1"
-k9s_coredns_image: "coredns/coredns:1.6.2"
-k8s_dashboard_image: "toyangdon/kubernetes-dashboard-arm64:1.10.1"
-k8s_traefik_image: "library/traefik:v2.1.1"
+k8s_coredns_image: "coredns/coredns:1.6.2"
+k8s_dashboard_image: "kubernetesui/dashboard:v2.0.0-beta8"
+k8s_metrics_scraper: "kubernetesui/metrics-scraper:v1.0.2"
+k8s_traefik_image: "library/traefik:v1.6.0"
 #k8s_heapster_image: "k8s/heapster-amd64:v1.5.0"
-k8s_addon_resizer_image: "toyangdon/addon-resizer-arm64:1.8.4"
+k8s_addon_resizer_image: "carlosedp/addon-resizer:v1.8.4-arm64"
 #k8s_influxdb_image: "k8s/heapster-influxdb-amd64:v1.3.3"
 #k8s_grafana_image: "k8s/heapster-grafana-amd64:v4.4.3"
 k8s_kube_proxy_image: "toyangdon/kube-proxy-arm64:v1.16.4"
@@ -16,7 +17,7 @@ k8s_heketi_image: k8s/heketi:6.0
 #非必选镜像
 k8s_metrics_server_image: "toyangdon/metrics-server-arm64:v0.3.4"
 #k8s_cluster_proportional_autoscaler_image=k8s/cluster-proportional-autoscaler-amd64:1.1.2
-k8s_node_problem_detector_image: "toyangdon/node-problem-detector-arm64:v0.8.0"
+#k8s_node_problem_detector_image: "toyangdon/node-problem-detector-arm64:v0.8.0"
 kube_state_metrics_image: toyangdon/kube-state-metrics-arm64:v1.9.0
 
 #openvpn

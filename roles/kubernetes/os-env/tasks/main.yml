@@ -10,7 +10,7 @@
 
 - block:
     - name: 删除centos默认安装
-      yum: name={{ item }} state=absent
+      package: name={{ item }} state=absent
       with_items:
         - firewalld
         - python-firewall
@@ -104,3 +104,11 @@
     sysctl_set: yes
     state: present
     reload: yes
+    
+# 后续改离线安装
+- name: install ca-certificates curl
+  package:
+    name:
+      - ca-certificates
+      - curl
+    state: present

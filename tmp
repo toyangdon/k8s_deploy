@@ -1,0 +1,10 @@
+openssl genrsa -out ca.key 2048
+openssl rsa -in  ca.key -pubout -out ca_public.key
+openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out cacerts.pem -subj "/C=CN/ST=GD/L=SZ/O=example/OU=dev/CN=rancher.com"
+openssl genrsa  -out tls.key 2048
+openssl req -new -key tls.key -passin pass:123456 -out tls.csr -subj "/C=CN/ST=GD/L=SZ/O=example/OU=dev/CN=rancher.com"
+openssl x509 -req -days 3650 -in tls.csr -CA cacert.crt -CAkey ca.key  -CAcreateserial -out tls.crt
+
+kubectl -n cattle-system create secret tls tls-rancher-ingress   --cert=tls.crt   --key=tls.key
+kubectl -n cattle-system create secret generic tls-ca   --from-file=cacerts.pem
+helm install rancher rancher-stable/rancher   --namespace cattle-system   --set hostname=rancher.com   --set ingress.tls.source=secret --set privateCA=true

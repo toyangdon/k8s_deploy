@@ -8,3 +8,8 @@ openssl x509 -req -days 3650 -in tls.csr -CA cacert.crt -CAkey ca.key  -CAcreate
 kubectl -n cattle-system create secret tls tls-rancher-ingress   --cert=tls.crt   --key=tls.key
 kubectl -n cattle-system create secret generic tls-ca   --from-file=cacerts.pem
 helm install rancher rancher-stable/rancher   --namespace cattle-system   --set hostname=rancher.com   --set ingress.tls.source=secret --set privateCA=true
+
+
+openssl genrsa -out dashboard.key 2048
+openssl req -new -out dashboard.csr -key dashboard.key -subj '/CN=192.168.246.200'
+openssl x509 -req -in dashboard.csr -signkey dashboard.key -out dashboard.crt 

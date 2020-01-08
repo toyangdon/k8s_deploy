@@ -52,7 +52,7 @@
 `mv /bin/sh /bin/sh.orig`  
 `ln -s /bin/bash /bin/sh`  
 5. 执行一键安装  
-`ansible-playbook setup.yml`
+`ansible-playbook setup.yml`  
 
 # 分步安装
 `playbooks`目录提供分步安装的相关playbook，主要分为两大块`kubernetes`和`gpaas`
@@ -67,33 +67,24 @@
 7. `ansible-playbook playbooks/kubernetes/07.calico.yml` 在主机上准备calico服务所需要的相关安装文件（与flannel可选）
 8. `ansible-playbook playbooks/kubernetes/07.flannel.yml` 在主机上准备flannel服务所需要的相关安装文件（与calico可选） （暂时不可用）
 9. `ansible-playbook playbooks/kubernetes/09.storage-nfs.yml` 安装nfs服务（与gfs可选）（暂时不可用）
-10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务
+10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务 (暂时x`不可用）
 11. `ansible-playbook playbooks/kubernetes/20.addnode.yml` 新增节点
 12. `ansible-playbook playbooks/kubernetes/30.addons.yml` kubernetes所有插件服务的部署，包括kube-proxy、kubedns、calico、glusterfs等等
 13. `ansible-playbook playbooks/kubernetes/90.setup.yml` 一键安装kubernetes,即顺序执行以上所有步骤（除了20.addnode）
 14. `ansible-playbook playbooks/kubernetes/99.clean.yml` 一键清理kubernetes集群（慎用）
 
 ## `gpass` 部署
-目前分为`cs-cloud`、`elk`和`monitor`三部分
-
-### `cs-cloud` 部署
-1. `ansible-playbook playbooks/gpaas/cs-cloud/90.setup.yml` 一键安装容器云平台，包括dashboard、ccapi和auth  
+目前分为`elk`和`monitor`二部分
 
 ### `elk` 部署
 1. `ansible-playbook playbooks/gpaas/elk/01.es.yml` es部署
-2. `ansible-playbook playbooks/gpaas/elk/02.logstash.yml` logstash部署
-3. `ansible-playbook playbooks/gpaas/elk/03.filebeat.yml` filebeat部署
-4. `ansible-playbook playbooks/gpaas/elk/04.kibana.yml` kibana部署
+3. `ansible-playbook playbooks/gpaas/elk/02.fluentd.yml` fluentd
+4. `ansible-playbook playbooks/gpaas/elk/03.kibana.yml` kibana部署
 5. `ansible-playbook playbooks/gpaas/elk/90.setup.yml` 一键安装elk，即顺序执行以上所有步骤  
 
 ### `monitor` 部署
-1. `ansible-playbook playbooks/gpaas/elk/01.es.yml` es部署(可选，如果部署了elk则不需要重复部署)
-2. `ansible-playbook playbooks/gpaas/monitor/02.metricbeat.yml` metricbeat部署
-3. `ansible-playbook playbooks/gpaas/monitor/03.grafana.yml` grafana部署
-4. `ansible-playbook playbooks/gpaas/monitor/04.alert.yml` 告警服务部署
-5. `ansible-playbook playbooks/gpaas/monitor/05.inspect.yml` 巡检服务部署
-6. `ansible-playbook playbooks/gpaas/monitor/06.push.yml` 推送服务部署
-7. `ansible-playbook playbooks/gpaas/monitor/90.setup.yml` 一键安装监控平台，即顺序执行以上所有步骤
+1. `ansible-playbook playbooks/gpaas/monitor/01.prometheus.yml` prometheus部署
+2. `ansible-playbook playbooks/gpaas/monitor/90.setup.yml` 一键安装监控平台，即顺序执行以上所有步骤
 
 ### 一键部署`gpass`
 1. `ansible-playbook playbooks/gpaas/90.setup.yml`

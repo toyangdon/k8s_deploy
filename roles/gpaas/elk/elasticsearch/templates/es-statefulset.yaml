@@ -1,8 +1,57 @@
+# RBAC authn and authz
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elasticsearch-logging
+  namespace: gw-cloud
+  labels:
+    k8s-app: elasticsearch-logging
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: elasticsearch-logging
+  labels:
+    k8s-app: elasticsearch-logging
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "services"
+  - "namespaces"
+  - "endpoints"
+  verbs:
+  - "get"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kube-system
+  name: elasticsearch-logging
+  labels:
+    k8s-app: elasticsearch-logging
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+subjects:
+- kind: ServiceAccount
+  name: elasticsearch-logging
+  namespace: kube-system
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: elasticsearch-logging
+  apiGroup: ""
+---
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: es-config
-  namespace: uimp-cloud
+  namespace: gw-cloud
 data:
   elasticsearch.yml: |
       path.data: {{es_data_path}}/data
@@ -28,7 +77,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: es-log4j
-  namespace: uimp-cloud
+  namespace: gw-cloud
 data:
   log4j2.properties: |
       status = error
@@ -129,7 +178,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: elasticsearch
-  namespace: uimp-cloud
+  namespace: gw-cloud
   labels:
     k8s-app: elasticsearch
     kubernetes.io/cluster-service: "true"
@@ -248,7 +297,7 @@ metadata:
   labels:
     elastic-app: elasticsearch-service
   name: elasticsearch-service
-  namespace: uimp-cloud
+  namespace: gw-cloud
 spec:
   ports:
     - port: 9200

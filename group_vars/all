@@ -28,7 +28,7 @@ CLUSTER_DNS_DOMAIN: "cluster.local."
 
 # 集群basic auth 使用的用户名和密码
 BASIC_AUTH_USER: "admin"
-BASIC_AUTH_PASS: "Zlst8888"
+BASIC_AUTH_PASS: "Greatwall8888"
 
 #默认二进制文件目录
 bin_dir: "/opt/k8s/bin"
@@ -74,8 +74,8 @@ node_taints: >-
 docker_insecure_registry: >-
   {{BASE_IMAGE_URL}}
 
-#是否部署elk
-deploy_elk: >-
+#是否部署efk
+deploy_efk: >-
   {%- if groups['elasticsearch']|length !=0 and groups['logstash']|length !=0 -%}true{%- else -%}false{%- endif -%}
 
 #是否部署监控告警
@@ -95,7 +95,7 @@ load_images: true
 push_images: true
 
 #工具镜像（证书）
-gw_tools_image: toyangdon/gw-tools:1.0
+gw_tools_image: toyangdon/gw-tools:1.1
 
 #证书生成命令
 cfssl_cmd: "{{bin_dir}}/docker run --rm -v {{ ca_dir }}:/workdir {{ gw_tools_image }} sh -c"

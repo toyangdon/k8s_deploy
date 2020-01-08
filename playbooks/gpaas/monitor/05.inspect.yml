@@ -1,4 +1,0 @@
-# 插件部署
-- hosts: deploy
-  roles:
-  - gpaas/monitor/inspect

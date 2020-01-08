@@ -1,6 +1,0 @@
-- name: 创建 cs-auth2 yaml文件
-  template: src=cs-auth2.yaml dest={{ base_dir }}/manifests/cs-cloud/cs-auth2.yaml
-  
-- name: 部署 auth2
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/cs-cloud/cs-auth2.yaml"
-  when: not ansible_check_mode  

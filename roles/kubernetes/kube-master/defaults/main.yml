@@ -1,7 +1,7 @@
 k8s_apiserver_image: toyangdon/kube-apiserver-arm64:v1.16.4
 k8s_scheduler_image: toyangdon/kube-scheduler-arm64:v1.16.4
 k8s_controller_image: toyangdon/kube-controller-manager-arm64:v1.16.4
-k8s_etcd_image: toyangdon/etcd:v3.3.15-arm64 
+k8s_etcd_image: toyangdon/etcd:v3.4.0-arm64
 
 #资源请求值与限制值
 #apiserver_cpu_requests: 1000m

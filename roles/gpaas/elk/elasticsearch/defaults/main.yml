@@ -5,10 +5,7 @@ es_data_path: >-
   {{data_dir}}/es
 
 #部署方式 stand-alone 独立节点  coexistence  共存logstash
-es_deploy_type: >-
-  {%- if group_names|length == 1 -%}stand-alone
-  {%- else -%}coexistence
-  {%- endif -%}
+es_deploy_type: stand-alone
 
 es_jvm_xms_size: >-
   {%- if es_deploy_type == "stand-alone" -%}-Xms{{(ansible_memtotal_mb * 0.5)|int}}m

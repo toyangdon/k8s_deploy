@@ -298,7 +298,6 @@ spec:
         - name: tmp-volume
           emptyDir: {}
 ---
----
 
 apiVersion: v1
 kind: ServiceAccount

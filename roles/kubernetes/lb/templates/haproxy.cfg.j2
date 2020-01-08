@@ -38,6 +38,19 @@ listen kube-master-insecure
 {% endfor %}
 
 listen kube-node
+        bind {{MASTER_IP}}:443
+        mode http
+        option http-server-close
+#        timeout tunnel 1h
+#        timeout client-fin 30
+        acl hdr_connection_upgrade hdr(Connection) -i upgrade
+        acl hdr_upgrade_websocket hdr(Upgrade) -i websocket
+        balance roundrobin
+{% for i in groups['kube-compute-node'] %}
+        server s{{i}} {{ i }}:443  check inter 10000 fall 2 rise 2 weight 1
+{% endfor %}
+
+listen kube-node-insecure
         bind {{MASTER_IP}}:80
         mode http
         option http-server-close

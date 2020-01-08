@@ -18,10 +18,10 @@
 - import_playbook: 07.flannel.yml
   when: "CLUSTER_NETWORK == 'flannel'"
   
-- import_playbook: 09.storage-nfs.yml
-  when: "storage_type == 'nfs'"
+#- import_playbook: 09.storage-nfs.yml
+#  when: "storage_type == 'nfs'"
   
-- import_playbook: 10.storage-gluster.yml
-  when: "storage_type == 'glusterfs'"
+#- import_playbook: 10.storage-gluster.yml
+#  when: "storage_type == 'glusterfs'"
 
 - import_playbook: 30.addons.yml

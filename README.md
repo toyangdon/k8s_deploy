@@ -32,7 +32,7 @@
 | Openvpn                 | 2.1          |          |
 
 # 部署示意图
-![k8s部署图](https://github.com/toyangdon/k8s_deploy/blob/master/kubernetes%20%E7%BB%84%E7%BB%87%E5%9B%BE.png)
+![k8s部署图](https://github.com/toyangdon/k8s_deploy/blob/master/kubernetes%20%E7%BB%84%E7%BB%87%E5%9B%BE.png?raw=true)
 # 快速安装
 1. 下载部署文件到部署节点的/etc/ansible目录下  
 2. 安装ansible  

@@ -18,8 +18,6 @@
 | traefik                 | 2.1.1        |          |
 | pause                   | 3.1          |          |
 | elasticsearch           | 6.2.4        |          |
-| filebeat                | 6.2.4        |          |
-| logstash-x-pack         | 6.2.4        |          |
 | kibana-x-pack           | 6.2.4        |          |
 | keepalived              | 2.0.19-r0    |          |
 | Haproxy                 | 2.1.2        |          |
@@ -69,16 +67,16 @@
 7. `ansible-playbook playbooks/kubernetes/07.calico.yml` 在主机上准备calico服务所需要的相关安装文件（与flannel可选）
 8. `ansible-playbook playbooks/kubernetes/07.flannel.yml` 在主机上准备flannel服务所需要的相关安装文件（与calico可选） （暂时不可用）
 9. `ansible-playbook playbooks/kubernetes/09.storage-nfs.yml` 安装nfs服务（与gfs可选）（暂时不可用）
-10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务 (暂时x`不可用）
+10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务 (暂时不可用）
 11. `ansible-playbook playbooks/kubernetes/20.addnode.yml` 新增节点
 12. `ansible-playbook playbooks/kubernetes/30.addons.yml` kubernetes所有插件服务的部署，包括kube-proxy、kubedns、calico、glusterfs等等
 13. `ansible-playbook playbooks/kubernetes/90.setup.yml` 一键安装kubernetes,即顺序执行以上所有步骤（除了20.addnode）
 14. `ansible-playbook playbooks/kubernetes/99.clean.yml` 一键清理kubernetes集群（慎用）
 
-## `gpass` 部署
+## `gpass` 部署(暂未实现)
 目前分为`elk`和`monitor`二部分
 
-### `elk` 部署
+### `efk` 部署
 1. `ansible-playbook playbooks/gpaas/elk/01.es.yml` es部署
 3. `ansible-playbook playbooks/gpaas/elk/02.fluentd.yml` fluentd
 4. `ansible-playbook playbooks/gpaas/elk/03.kibana.yml` kibana部署

@@ -56,9 +56,9 @@ NODE_ID: >-
 #生产配置
 #KUBE_RESERVED: "{'cpu':'200m','memory':'500Mi','ephemeral-storage':'1Gi'}"
 system_reserved: >-
-  {'cpu': '{{ ansible_processor_vcpus * 1000 * 0.05 }}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
+  {'cpu': '{{ ansible_processor_vcpus * 1000 * 0.08 }}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
 kube_reserved: >-
-  {'cpu': '{{ansible_processor_vcpus * 1000 * 0.05}}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
+  {'cpu': '{{ansible_processor_vcpus * 1000 * 0.08}}m','memory': '{{ansible_memtotal_mb * 0.05}}Mi','ephemeral-storage':'500Mi'}
 eviction_hard: >-
   {'memory.available': '{{ansible_memtotal_mb * 0.05}}Mi','nodefs.available':'5%','imagefs.available':'15%','nodefs.inodesFree': '5%'}
 

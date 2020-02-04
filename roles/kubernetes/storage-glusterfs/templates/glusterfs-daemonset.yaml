@@ -1,15 +1,19 @@
 ---
 kind: DaemonSet
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
-  name: glusterfs
   namespace: kube-system
+  name: glusterfs
   labels:
     glusterfs: daemonset
   annotations:
     description: GlusterFS DaemonSet
     tags: glusterfs
 spec:
+  selector:
+    matchLabels:
+      glusterfs: pod
+      glusterfs-node: pod
   template:
     metadata:
       name: glusterfs
@@ -18,7 +22,7 @@ spec:
         glusterfs-node: pod
     spec:
       nodeSelector:
-        "node-role.kubernetes.io/storage-node": "true"
+        "node.kubernetes.io/storage-node": "true"
       hostNetwork: true
       tolerations:
       - key: "node-role.kubernetes.io/storage-node"
@@ -30,11 +34,19 @@ spec:
         hostnames:
           - "{{ hostvars[i]['NODE_ID']}}"
 {% endfor %}
+      hostNetwork: true
       containers:
       - image: {{BASE_IMAGE_URL}}/{{k8s_gluster_image}}
         imagePullPolicy: IfNotPresent
         name: glusterfs
         env:
+        # alternative for /dev volumeMount to enable access to *all* devices
+        - name: HOST_DEV_DIR
+          value: "/mnt/host-dev"
+        # set GLUSTER_BLOCKD_STATUS_PROBE_ENABLE to "1" so the
+        # readiness/liveness probe validate gluster-blockd as well
+        - name: GLUSTER_BLOCKD_STATUS_PROBE_ENABLE
+          value: "1"
         - name: GB_GLFS_LRU_COUNT
           value: "15"
         - name: TCMU_LOGDIR
@@ -49,6 +61,8 @@ spec:
         volumeMounts:
         - name: glusterfs-heketi
           mountPath: "/var/lib/heketi"
+        - name: glusterfs-run
+          mountPath: "/run"
         - name: glusterfs-lvm
           mountPath: "/run/lvm"
         - name: glusterfs-etc
@@ -57,15 +71,22 @@ spec:
           mountPath: "/var/log/glusterfs"
         - name: glusterfs-config
           mountPath: "/var/lib/glusterd"
-        - name: glusterfs-dev
-          mountPath: "/dev"
+        - name: glusterfs-host-dev
+          mountPath: "/mnt/host-dev"
         - name: glusterfs-misc
           mountPath: "/var/lib/misc/glusterfsd"
+        - name: glusterfs-block-sys-class
+          mountPath: "/sys/class"
+        - name: glusterfs-block-sys-module
+          mountPath: "/sys/module"
         - name: glusterfs-cgroup
           mountPath: "/sys/fs/cgroup"
           readOnly: true
         - name: glusterfs-ssl
           mountPath: "/etc/ssl"
+          readOnly: true
+        - name: kernel-modules
+          mountPath: "/lib/modules"
           readOnly: true
         securityContext:
           capabilities: {}
@@ -77,10 +98,10 @@ spec:
             command:
             - "/bin/bash"
             - "-c"
-            - systemctl status glusterd.service
+            - "if command -v /usr/local/bin/status-probe.sh; then /usr/local/bin/status-probe.sh readiness; else systemctl status glusterd.service; fi"
           periodSeconds: 25
           successThreshold: 1
-          failureThreshold: 15
+          failureThreshold: 50
         livenessProbe:
           timeoutSeconds: 3
           initialDelaySeconds: 40
@@ -88,14 +109,15 @@ spec:
             command:
             - "/bin/bash"
             - "-c"
-            - systemctl status glusterd.service
+            - "if command -v /usr/local/bin/status-probe.sh; then /usr/local/bin/status-probe.sh liveness; else systemctl status glusterd.service; fi"
           periodSeconds: 25
           successThreshold: 1
-          failureThreshold: 15
+          failureThreshold: 50
       volumes:
       - name: glusterfs-heketi
         hostPath:
           path: "/var/lib/heketi"
+      - name: glusterfs-run
       - name: glusterfs-lvm
         hostPath:
           path: "/run/lvm"
@@ -108,15 +130,24 @@ spec:
       - name: glusterfs-config
         hostPath:
           path: "/var/lib/glusterd"
-      - name: glusterfs-dev
+      - name: glusterfs-host-dev
         hostPath:
           path: "/dev"
       - name: glusterfs-misc
         hostPath:
           path: "/var/lib/misc/glusterfsd"
+      - name: glusterfs-block-sys-class
+        hostPath:
+          path: "/sys/class"
+      - name: glusterfs-block-sys-module
+        hostPath:
+          path: "/sys/module"
       - name: glusterfs-cgroup
         hostPath:
           path: "/sys/fs/cgroup"
       - name: glusterfs-ssl
         hostPath:
           path: "/etc/ssl"
+      - name: kernel-modules
+        hostPath:
+          path: "/lib/modules"

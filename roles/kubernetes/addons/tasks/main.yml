@@ -33,8 +33,10 @@
   shell: "{{bin_dir}}/kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin"  
   ignore_errors: true
 
-#- name: 导入gfs tasks
-# include_tasks : glusterfs.yml  
+- name: 导入gfs tasks
+  include_tasks : glusterfs.yml
+  tags: 
+  - glusterfs  
   
 - name: 创建 dns-horizontal-autoscaler.yaml文件
   template: src=dns-horizontal-autoscaler.yaml dest={{ base_dir }}/manifests/dns-horizontal-autoscaler.yaml

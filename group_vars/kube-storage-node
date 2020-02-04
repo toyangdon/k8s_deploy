@@ -1,3 +1,3 @@
 node_labels: >-
-  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node-role.kubernetes.io/storage-node=true
-  {%- if groups["kube-storage-node"][0] == inventory_hostname -%},node-role.kubernetes.io/heketi=true{%- endif -%}
+  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node.kubernetes.io/storage-node=true
+  {%- if groups["kube-storage-node"][0] == inventory_hostname -%},node.kubernetes.io/heketi=true{%- endif -%}

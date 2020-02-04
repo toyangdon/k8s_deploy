@@ -40,7 +40,7 @@ spec:
     nodePort: 26060
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata: 
   annotations: 
@@ -50,6 +50,10 @@ metadata:
   name: heketi
   namespace: kube-system
 spec: 
+  selector:
+    matchLabels:
+      glusterfs: heketi-pod
+      name: heketi
   replicas: 1
   template: 
     metadata: 

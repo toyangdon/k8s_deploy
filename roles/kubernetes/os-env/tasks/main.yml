@@ -112,5 +112,3 @@
       - ca-certificates
       - curl
     state: present
-    install_recommends: no
-    force: yes

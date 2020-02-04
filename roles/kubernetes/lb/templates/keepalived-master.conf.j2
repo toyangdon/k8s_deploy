@@ -3,7 +3,7 @@ global_defs {
 }
 
 vrrp_script check-haproxy {
-    script "docker ps |grep -v pause|grep haproxy"
+    script "sh -c 'docker ps |grep -v pause|grep haproxy'"
     interval 5
     weight -30
 }

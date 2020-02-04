@@ -148,6 +148,8 @@
   - name: glusterfs客户端离线安装
     shell: rpm -i --force {{data_dir}}/rpm/glusterfs/*.rpm
     when: storage_type == "glusterfs" and deploy_offline and ansible_distribution == "CentOS"
+    tags:
+    - glusterfs
     
   - name: glusterfs客户端在线安装
     yum: name={{ item }} state=present

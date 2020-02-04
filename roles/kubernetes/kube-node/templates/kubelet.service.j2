@@ -31,6 +31,7 @@ ExecStart={{ bin_dir }}/kubelet \
   --root-dir={{data_dir}}/kubelet \
   --log-dir={{data_dir}}/log/kubelet \
   --logtostderr=false \
+  --alsologtostderr=false \
   --feature-gates=RotateKubeletClientCertificate=true,RotateKubeletServerCertificate=true \
   --docker-root={{data_dir}}/docker \
   --v=2

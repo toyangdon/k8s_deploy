@@ -154,6 +154,12 @@
   - name: glusterfs客户端在线安装
     yum: name={{ item }} state=present
     with_items:
+    - centos-release-gluster7
+    when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"
+    
+  - name: glusterfs客户端在线安装
+    yum: name={{ item }} state=present
+    with_items:
     - glusterfs
     - glusterfs-fuse
     when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"

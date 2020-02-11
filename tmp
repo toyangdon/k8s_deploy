@@ -3,7 +3,7 @@ openssl rsa -in  ca.key -pubout -out ca_public.key
 openssl req -newkey rsa:2048 -nodes -keyout ca.key -x509 -days 365 -out cacerts.pem -subj "/C=CN/ST=GD/L=SZ/O=example/OU=dev/CN=rancher.com"
 openssl genrsa  -out tls.key 2048
 openssl req -new -key tls.key -passin pass:123456 -out tls.csr -subj "/C=CN/ST=GD/L=SZ/O=example/OU=dev/CN=rancher.com"
-openssl x509 -req -days 3650 -in tls.csr -CA cacert.crt -CAkey ca.key  -CAcreateserial -out tls.crt
+openssl x509 -req -days 3650 -in tls.csr -CA cacerts.pem -CAkey ca.key  -CAcreateserial -out tls.crt
 
 kubectl -n cattle-system create secret tls tls-rancher-ingress   --cert=tls.crt   --key=tls.key
 kubectl -n cattle-system create secret generic tls-ca   --from-file=cacerts.pem
@@ -11,5 +11,7 @@ helm install rancher rancher-stable/rancher   --namespace cattle-system   --set 
 
 
 openssl genrsa -out dashboard.key 2048
-openssl req -new -out dashboard.csr -key dashboard.key -subj '/CN=192.168.246.200'
+openssl req -new -out dashboard.csr -key dashboard.key -subj '/CN=10.10.101.201'
 openssl x509 -req -in dashboard.csr -signkey dashboard.key -out dashboard.crt 
+
+kubectl -n kube-system create secret tls kubernetes-dashboard-certs   --cert=dashboard.crt   --key=dashboard.key

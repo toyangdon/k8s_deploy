@@ -50,7 +50,7 @@ harbor
 MASTER_IP="10.10.101.201"
 
 # 基础镜像
-BASE_IMAGE_URL=docker.io
+BASE_IMAGE_URL=10.10.101.84
 
 #gfs磁盘设备名
 gfs_device=/dev/vdb

@@ -2,7 +2,7 @@
 VIRTUAL_ROUTER_ID: 25
 
 keepalived_image: toyangdon/keepalived:2.0.19-r0-arm64
-haproxy_image: haproxy:2.1.2
+haproxy_image: library/haproxy:2.1.2
 
 haproxy_cpu_requests: 700m
 haproxy_cpu_limit: 700m

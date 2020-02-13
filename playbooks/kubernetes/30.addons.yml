@@ -1,3 +1,5 @@
+- hosts: kube-storage-node
+  gather_facts: yes
 - hosts: deploy
   roles:
     - kubernetes/addons

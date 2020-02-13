@@ -125,4 +125,4 @@ spec:
           type: DirectoryOrCreate
         name: db
       nodeSelector:
-        "node-role.kubernetes.io/heketi": "true"
+        "node.kubernetes.io/heketi": "true"

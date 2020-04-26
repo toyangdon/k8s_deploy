@@ -1,0 +1,4 @@
+# 插件部署
+- hosts: deploy
+  roles:
+  - gpaas/elk/filebeat

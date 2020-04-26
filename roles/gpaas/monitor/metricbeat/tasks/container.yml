@@ -1,7 +1,0 @@
-- name: 创建metricbeat.yaml文件
-  template: src=metricbeat.yaml dest={{ base_dir }}/manifests/metricbeat.yaml
-  delegate_to: localhost
-  
-- name: 部署metricbeat.yaml
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/metricbeat.yaml"
-  delegate_to: localhost

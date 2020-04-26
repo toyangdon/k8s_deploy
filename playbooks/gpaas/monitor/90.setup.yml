@@ -1,1 +1,14 @@
-- import_playbook: 01.prometheus.yml
+#- import_playbook: ../elk/01.es.yml
+ # when: deploy_es == 'true'
+
+#- import_playbook: 02.metricbeat.yml
+
+#- import_playbook: 03.grafana.yml
+
+#- import_playbook: 04.alert.yml
+
+#- import_playbook: 05.inspect.yml
+
+#- import_playbook: 06.push.yml
+
+- import_playbook:  monitor.yml

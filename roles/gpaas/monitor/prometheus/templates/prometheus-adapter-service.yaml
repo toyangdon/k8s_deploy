@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: prometheus-adapter
+  name: prometheus-adapter
+  namespace: monitoring
+spec:
+  ports:
+  - name: https
+    nodePort: 22443
+    port: 443
+    targetPort: 6443
+  selector:
+    name: prometheus-adapter
+  type: NodePort

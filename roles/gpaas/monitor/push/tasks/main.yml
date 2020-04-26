@@ -1,7 +1,0 @@
-- name: 创建 uimp-cloud-push yaml文件
-  template: src=uimp-cloud-push.yaml dest={{ base_dir }}/manifests/cs-cloud/uimp-cloud-push.yaml
-  when: cs_push_enable == true
-  
-- name: 部署 uimp-cloud-push
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/cs-cloud/uimp-cloud-push.yaml"
-  when: cs_push_enable == true

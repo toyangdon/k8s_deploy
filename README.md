@@ -18,15 +18,12 @@
 | traefik                 | 2.1.1        |          |
 | pause                   | 3.1          |          |
 | elasticsearch           | 6.2.4        |          |
-| kibana-x-pack           | 6.2.4        |          |
 | keepalived              | 2.0.19-r0    |          |
 | Haproxy                 | 2.1.2        |          |
-| Harbor相关              | v1.2.0       |          |
 | gluster                 | 3.13.2       |          |
 | heketi                  | 6.0          |          |
 | metrics-server          | v0.2.0       |          |
 | node-problem-detector   | v0.4.1       |          |
-| kube-state-metrics      | v1.4.0       |          |
 | Openvpn                 | 2.1          |          |
 
 # 部署示意图

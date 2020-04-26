@@ -1,0 +1,15 @@
+#中铝视拓容器云监控部署
+cs_monitor_enable: true
+base_image: prom/prometheus
+alertmanager_image: prom/alertmanager:v0.18.0
+grafana_image: grafana/grafana:6.6.2
+kube_rbac_proxy_image: corberos/kube-rbac-proxy:v0.4.1
+kube_state_metrics_image: cyrilix/kube-state-metrics:arm64-1.8
+node_exporter_image: prom/node-exporter:v0.18.1
+prometheus_adapter_image: directxman12/k8s-prometheus-adapter:v0.5.0
+config_reloader_image: jianghang8421/configmap-reload-arm64:v0.1
+prometheus_operator_image: rascal/prometheus-operator:v0.34.0
+src_path: /root/prometheus/kube-prometheus/manifests/
+#部署目录，即 ansible 工作目录
+base_dir: /etc/ansible
+is_force_reinstall: true

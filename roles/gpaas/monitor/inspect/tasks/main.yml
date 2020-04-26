@@ -1,7 +1,0 @@
-- name: 创建cs-inspect yaml文件
-  template: src=cs-inspect.yaml dest={{ base_dir }}/manifests/cs-cloud/cs-inspect.yaml
-  when: cs_inspect_enable == true
-  
-- name: 部署 cs-inspect
-  shell: "{{bin_dir}}/kubectl apply -f {{ base_dir }}/manifests/cs-cloud/cs-inspect.yaml"
-  when: cs_inspect_enable == true

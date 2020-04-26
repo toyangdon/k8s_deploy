@@ -1,0 +1,238 @@
+# RBAC authn and authz
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elasticsearch-logging
+  namespace: kube-system
+  labels:
+    k8s-app: elasticsearch-logging
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: elasticsearch-logging
+  labels:
+    k8s-app: elasticsearch-logging
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "services"
+  - "namespaces"
+  - "endpoints"
+  verbs:
+  - "get"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kube-system
+  name: elasticsearch-logging
+  labels:
+    k8s-app: elasticsearch-logging
+    addonmanager.kubernetes.io/mode: Reconcile
+subjects:
+- kind: ServiceAccount
+  name: elasticsearch-logging
+  namespace: kube-system
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: elasticsearch-logging
+  apiGroup: ""
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-config
+  namespace: kube-system
+data:
+  elasticsearch.yml: |
+      path.data: {{es_data_path}}/data
+      path.logs: {{es_data_path}}/logs
+      #http.host: 0.0.0.0
+      http.cors.enabled: true
+      http.cors.allow-origin: "*"
+      network.host: 0.0.0.0
+      node.name: ${HOSTNAME}
+      #xpack setting
+      action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*,*
+      xpack.security.enabled: false
+      xpack.license.self_generated.type: basic
+{% if groups['elasticsearch']|length > 1 %}
+      discovery.zen.ping.unicast.hosts: [{%- for node in groups['elasticsearch'] -%}"{{node}}"{% if not loop.last %},{% endif %}{%- endfor -%}]
+      discovery.zen.minimum_master_nodes: {{(groups['elasticsearch']|length) // 2 + 1}}
+      discovery.zen.ping_timeout: 5s
+      cluster.name: elasticsearch
+{% endif %}
+
+---
+---
+# https://raw.githubusercontent.com/kubernetes/kubernetes/v1.10.2/cluster/addons/fluentd-elasticsearch/es-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: elasticsearch
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  serviceName: elasticsearch
+  replicas: {{groups['elasticsearch']|length}}
+  selector:
+    matchLabels:
+      k8s-app: elasticsearch
+  template:
+    metadata:
+      labels:
+        k8s-app: elasticsearch
+        kubernetes.io/cluster-service: "true"
+    spec: 
+      hostNetwork: true
+      tolerations:
+{% for taint in node_taints.split(",") %}
+      - operator: "Exists"
+        effect: "NoSchedule"
+        key: {{taint|replace("=:NoSchedule","")}}
+{% endfor %}
+      nodeSelector:
+        "node.kubernetes.io/elasticsearch": "true"
+      affinity:
+#        nodeAffinity:
+#        requiredDuringSchedulingIgnoredDuringExecution:
+#         nodeSelectorTerms:
+#          - matchExpressions:
+#            - key: node-role.kubernetes.io/es
+#              operator: Exists
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution: 
+          - labelSelector:
+              matchExpressions:
+              - key: k8s-app
+                operator: In
+                values: 
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: "{{BASE_IMAGE_URL}}/{{ elasticsearch_image }}"
+        name: elasticsearch
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: {{ es_cpu_limit }}
+            memory: "{{ es_mem_limit }}"
+          requests:
+            cpu: {{ es_cpu_requests }}
+            memory: "{{ es_mem_requests }}"
+        ports:
+        - containerPort: 9200
+          name: db
+          protocol: TCP
+        - containerPort: 9300
+          name: transport
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+        volumeMounts:
+        - name: es-config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+        - name: es-persistent-storage
+          mountPath: /data/es
+        env:
+        - name: "NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: "ES_JAVA_OPTS"
+          value: "{{es_jvm_xms_size}} {{es_jvm_xmx_size}}"
+        securityContext:
+            privileged: true
+      volumes:
+      - name: es-config
+        configMap:
+          name: es-config
+          items:
+          - key: elasticsearch.yml
+            path: elasticsearch.yml
+#      initContainers:
+#      - image: alpine:3.6
+#        command: ["/sbin/sysctl", "-w", "vm.max_map_count=262144"]
+#        name: elasticsearch-init
+#        securityContext:
+#          privileged: true
+  volumeClaimTemplates:
+  - metadata:
+      name: es-persistent-storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+{% if es_storage_capacity == 'auto' %}
+          storage: {{es_storage_capacity_query.stdout}}
+{% else %}
+          storage: {{es_storage_capacity}}
+{% endif %}
+      storageClassName: local-storage
+      
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    elastic-app: elasticsearch-service
+  name: elasticsearch-service
+  namespace: kube-system
+spec:
+  ports:
+    - port: 9200
+      name: db
+      targetPort: 9200
+    - port: 9300
+      name: transport
+      targetPort: 9300
+  selector:
+    k8s-app: elasticsearch
+
+---
+{% for node in groups['elasticsearch'] %}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-persistent-storage-{{hostvars[node].NODE_ID}}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+{% if es_storage_capacity == 'auto' %}
+    storage: {{es_storage_capacity_query.stdout}}
+{% else %}
+    storage: {{es_storage_capacity}}
+{% endif %}
+  local:
+    path: {{es_data_path}}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - "{{hostvars[node].NODE_ID}}"
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+{% endfor %}

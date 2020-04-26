@@ -13,7 +13,7 @@ k8s_addon_resizer_image: "carlosedp/addon-resizer:v1.8.4-arm64"
 k8s_kube_proxy_image: "toyangdon/kube-proxy-arm64:v1.16.4"
 #glusterfs
 k8s_gluster_image: toyangdon/glusterfs-centos:4-arm64
-k8s_heketi_image: toyangdon/heketi:8-arm
+k8s_heketi_image: toyangdon/heketi:8-arm64
 
 #非必选镜像
 k8s_metrics_server_image: "toyangdon/metrics-server-arm64:v0.3.4"

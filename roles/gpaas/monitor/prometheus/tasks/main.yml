@@ -1,0 +1,77 @@
+- name: show debug info
+  debug: var="{{ src_path }}", "{{ base_dir }}"  verbosity=0
+
+- name: 判断prometheus源文件是否存在
+  stat:
+   path: "{{ src_path }}"
+  register: result
+  when: cs_monitor_enable == true
+
+- name: 文件是否存在结果显示
+  debug:
+    msg: "{{ result }}"
+  when: cs_monitor_enable == true
+
+- name: 判断是否已经部署prometheus
+  shell: "{{ bin_dir }}/kubectl get pods -n monitoring | wc -l"
+  register: ok_var
+  when: cs_monitor_enable == true
+
+- name: show debug info
+  debug: var=ok_var.stdout  verbosity=0
+
+- name: 删除已经部署的pods 和deployment
+  shell: "{{ bin_dir }}/kubectl delete all  --all -n monitoring --force --grace-period=0"
+  when: ok_var.stdout | int  > 0 and is_force_reinstall == true 
+
+- name: 删除manifest文件
+  shell: "rm -rf {{ base_dir }}/manifests/prometheus/"
+  when:  ok_var.stdout | int  > 0 and is_force_reinstall == true
+
+- name: 拷贝manifest文件
+  copy: src={{ src_path }} dest={{ base_dir }}/manifests/prometheus/
+  when: cs_monitor_enable == true and is_force_reinstall == true 
+
+- name: 创建组件模板文件
+  template: src={{ item }} dest={{ base_dir }}/manifests/prometheus/{{ item | basename | regex_replace('\.j2','') }}
+  with_fileglob:
+    - "{{ base_dir }}/manifests/prometheus/*.j2"
+  when: cs_monitor_enable == true and is_force_reinstall == true
+
+- name: 创建CRD模板文件 
+  template: src={{ item }} dest={{ base_dir }}/manifests/prometheus/{{ item | basename | regex_replace('\.j2','') }}
+  with_fileglob:
+    - "{{ base_dir }}/manifests/prometheus/setup/*.j2"
+  when: cs_monitor_enable == true and is_force_reinstall == true
+
+- name: 删除模板文件
+  shell: rm -rf {{ base_dir }}/manifests/prometheus/*.j2 && rm -rf {{ base_dir }}/manifests/prometheus/setup/*.j2
+ 
+
+- name: 部署 组件
+  shell: "{{ bin_dir }}/kubectl create -f {{ base_dir }}/manifests/prometheus/"
+  register: result
+  when: cs_monitor_enable == true and is_force_reinstall == true
+  failed_when: "'AlreadyExists' not in result.stderr"
+
+- name: show debug info
+  debug: var=result  verbosity=0
+
+- name: 升级 组件
+  shell: "{{ bin_dir }}/kubectl apply -f {{ base_dir }}/manifests/prometheus/"
+  #register: result
+  when: cs_monitor_enable == true and is_force_reinstall != true
+
+- name: show debug info
+  debug: var=result  verbosity=0
+
+- name: 部署CRD
+  shell: "{{ bin_dir }}/kubectl create -f {{ base_dir }}/manifests/prometheus/setup"
+  register: result
+  when: cs_monitor_enable == true and is_force_reinstall == true 
+  failed_when: "'AlreadyExists' not in result.stderr"
+
+- name: 升级CRD
+  shell: "{{ bin_dir }}/kubectl apply -f {{ base_dir }}/manifests/prometheus/setup"
+  #register: result
+  when: cs_monitor_enable == true and is_force_reinstall != true

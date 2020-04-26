@@ -1,2 +1,0 @@
-metricbeat_image: prod/metricbeat:6.2.3
-metricbeat_type: container

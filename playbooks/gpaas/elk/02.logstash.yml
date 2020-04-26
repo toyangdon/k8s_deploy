@@ -1,0 +1,13 @@
+- hosts:
+  - logstash
+  gather_facts: yes
+
+- hosts:
+  - logstash
+  roles:
+  - { role: kubernetes/prepare, when "logstash_deploy_type == 'stand-alone'" }
+  - { role: kubernetes/docker, when: "logstash_deploy_type == 'stand-alone'" }
+  - { role: kubernetes/calico , when: "CLUSTER_NETWORK == 'calico' and logstash_deploy_type == 'stand-alone'" }
+  - { role: kubernetes/flannel, when: "CLUSTER_NETWORK == 'flannel' and logstash_deploy_type == 'stand-alone' " }
+  - { role: kubernetes/kube-node , when: "logstash_deploy_type == 'stand-alone'"}
+  - gpaas/elk/logstash

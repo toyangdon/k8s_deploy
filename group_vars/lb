@@ -9,3 +9,9 @@ LB_ROLE: >-
   {%- if groups["lb"][0] == inventory_hostname -%}master
   {%- else -%}backup
   {%- endif -%}
+
+#保留值
+system_reserved: >-
+  {'cpu': '500m','memory': '1024Mi','ephemeral-storage':'500Mi'}
+kube_reserved: >-
+  {'cpu': '500m','memory': '1024Mi','ephemeral-storage':'500Mi'}

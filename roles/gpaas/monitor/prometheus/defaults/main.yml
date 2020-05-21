@@ -1,7 +1,7 @@
 #中铝视拓容器云监控部署
 cs_monitor_enable: true
 base_image: prom/prometheus
-alertmanager_image: prom/alertmanager:v0.18.0
+alertmanager_image: prom/alertmanager
 grafana_image: grafana/grafana:6.6.2
 kube_rbac_proxy_image: corberos/kube-rbac-proxy:v0.4.1
 kube_state_metrics_image: cyrilix/kube-state-metrics:arm64-1.8

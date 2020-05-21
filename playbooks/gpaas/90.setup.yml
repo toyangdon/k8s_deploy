@@ -1,7 +1,7 @@
 #- import_playbook: cs-cloud/90.setup.yml
 
 #- import_playbook: elk/90.setup.yml
-#  when: deploy_elk == 'true'
+#  when: deploy_elk == true
 
 - import_playbook: monitor/90.setup.yml
-  when: deploy_monitor == 'true'
+  when: deploy_monitor == true

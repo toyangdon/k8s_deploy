@@ -9,12 +9,17 @@
 #  when: not (ansible_kernel | match("4.*.x86_64"))
 
 - block:
-    - name: 删除centos默认安装
+    - name: 删除系统默认安装
       package: name={{ item }} state=absent
       with_items:
         - firewalld
         - python-firewall
         - firewalld-filesystem
+        
+    # networkmanager与kube-proxy ipvs有冲突
+    - name: 停止networkmanager
+      service: name=NetworkManager state=stopped enabled=no
+      ignore_errors: true
 
     - name: 临时关闭 selinux
       shell: "setenforce 0" 
@@ -112,3 +117,8 @@
       - ca-certificates
       - curl
     state: present
+    
+# 修改时间为东八区
+- name: modify time zone
+  timezone:
+    name: Asia/Shanghai

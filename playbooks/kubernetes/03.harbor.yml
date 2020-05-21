@@ -1,5 +1,5 @@
-- hosts: harbor
-  gather_facts: yes
+#- hosts: harbor
+#  gather_facts: yes
 
 - hosts: harbor
   roles:

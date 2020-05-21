@@ -1,8 +1,8 @@
-- hosts:
-  - lb
-  - kube-master
-  - kube-node
-  gather_facts: yes
+#- hosts:
+#  - lb
+#  - kube-master
+#  - kube-node
+#  gather_facts: yes
   
 #先lb节点
 - hosts:

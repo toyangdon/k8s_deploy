@@ -1,3 +1,8 @@
 node_labels: >-
   {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node.kubernetes.io/storage-node=true
   {%- if groups["kube-storage-node"][0] == inventory_hostname -%},node.kubernetes.io/heketi=true{%- endif -%}
+#保留值
+system_reserved: >-
+  {'cpu': '500m','memory': '1024Mi','ephemeral-storage':'500Mi'}
+kube_reserved: >-
+  {'cpu': '500m','memory': '1024Mi','ephemeral-storage':'500Mi'}

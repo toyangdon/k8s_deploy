@@ -1,5 +1,5 @@
-- hosts: kube-master
-  gather_facts: yes
+#- hosts: kube-master
+#  gather_facts: yes
  
 - hosts: kube-master
   roles:

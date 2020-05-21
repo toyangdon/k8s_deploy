@@ -1,6 +1,6 @@
 # 所有主机进行基础环境配置
-- hosts: all
-  gather_facts: yes
+#- hosts: all
+#  gather_facts: yes
 
 - hosts:
   - kube-cluster

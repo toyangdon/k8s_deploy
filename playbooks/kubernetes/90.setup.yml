@@ -4,7 +4,7 @@
 
 - import_playbook: 02.prepare.yml
 
-- import_playbook: 03.harbor.yml
+#- import_playbook: 03.harbor.yml
 
 - import_playbook: 04.lb.yml
 

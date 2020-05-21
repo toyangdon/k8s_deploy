@@ -100,3 +100,5 @@ gw_tools_image: toyangdon/gw-tools:1.1
 #证书生成命令
 cfssl_cmd: "{{bin_dir}}/docker run --rm -v {{ ca_dir }}:/workdir {{ gw_tools_image }} sh -c"
 
+#域名后缀
+common_domain_suffix=ccyunchina.cn

@@ -6,11 +6,11 @@
 #NODE_ID为必填参数，将做于节点hostname设置，注意请不要输入下划线
 #管理节点
 [kube-master]
-192.168.10.50 NODE_ID=master-50
+192.168.10.50
 
 #计算节点
 [kube-compute-node]
-192.168.10.57 NODE_ID=node-57
+192.168.10.57
 
 #不要修改-------------
 [kube-node:children]
@@ -25,11 +25,7 @@ kube-master
 #存储节点
 #一定要有一个节点打上node-role.kubernetes.io/heketi=true的标签
 [kube-storage-node]
-192.168.10.53 NODE_ID=storage-53  NODE_LABELS="node-role.kubernetes.io/heketi=true" 
-
-#镜像仓库安装节点
-[harbor]
-192.168.10.50
+192.168.10.53
 
 [all:vars]
 #集群 MASTER IP  如果单master部署，则该值为master ip，如果多master部署,则改值为lb的vip

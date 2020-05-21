@@ -15,6 +15,7 @@
 
 #存储节点
 [kube-storage-node]
+10.10.101.60
 
 [kube-node:children]
 kube-compute-node
@@ -24,20 +25,11 @@ kube-storage-node
 kube-node
 kube-master
 lb
-harbor
 
-#镜像仓库所在节点
-[harbor]
-
-#logstash节点
-[logstash]
-
-#elasticsearch节点
-[elasticsearch]
 
 #代理节点
 #多管理节点时必须配置有代理节点
-#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现nginx高可用,lb_only表示不使用keepalived
+#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现haproxy高可用,lb_only表示不使用keepalived
 [lb]
 10.10.101.77
 10.10.101.28
@@ -50,10 +42,7 @@ harbor
 MASTER_IP="10.10.101.201"
 
 # 基础镜像
-BASE_IMAGE_URL=10.10.101.84
+BASE_IMAGE_URL=docker.io
 
 #gfs磁盘设备名
 gfs_device=/dev/vdb
-
-#域名后缀
-common_domain_suffix=ccyunchina.cn

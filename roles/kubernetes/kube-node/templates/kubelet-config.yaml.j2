@@ -24,8 +24,8 @@ containerLogMaxFiles: 3
 containerLogMaxSize: 20Mi
 enforceNodeAllocatable:
 - pods
-- kube-reserved
-- system-reserved
+#- kube-reserved
+#- system-reserved
 eventBurst: 10
 eventRecordQPS: 5
 evictionHard: {{eviction_hard}}
@@ -39,8 +39,8 @@ httpCheckFrequency: 40s
 imageGCHighThresholdPercent: 85
 imageGCLowThresholdPercent: 80
 imageMinimumGCAge: 2m0s
-kubeReservedCgroup: /system.slice/kubelet.service
-kubeReserved: {{kube_reserved}}
+#kubeReservedCgroup: /system.slice/kubelet.service
+#kubeReserved: {{kube_reserved}}
 kubeAPIBurst: 100
 kubeAPIQPS: 50
 makeIPTablesUtilChains: true
@@ -59,8 +59,8 @@ runtimeRequestTimeout: 2m0s
 serializeImagePulls: true
 streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
-systemReservedCgroup: /system.slice
-systemReserved: {{ system_reserved }}
+#systemReservedCgroup: /system.slice
+#systemReserved: {{ system_reserved }}
 #tlsCertFile: {{ ca_dir }}/kubelet.pem
 #tlsPrivateKeyFile: {{ ca_dir }}/kubelet-key.pem
 rotateCertificates: true

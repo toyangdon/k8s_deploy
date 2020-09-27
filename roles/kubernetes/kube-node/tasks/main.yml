@@ -38,7 +38,7 @@
     shell: "{{ bin_dir }}/kubectl apply -f {{base_dir}}/roles/kubernetes/kube-node/files/controller-manager-auto-appove.yaml"
     delegate_to: localhost
     run_once: true
-  when: node_role not in [ "master","lb" ]
+  when: node_role in [ "kube-node" ]
   
 
 

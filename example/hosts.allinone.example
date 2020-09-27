@@ -1,0 +1,43 @@
+[deploy]
+192.168.110.114
+
+#节点配置
+#管理节点 
+[kube-master]
+192.168.110.114
+
+#计算节点
+[kube-compute-node]
+192.168.110.114
+
+#存储节点
+[kube-storage-node]
+192.168.110.114
+
+[kube-node:children]
+kube-compute-node
+kube-storage-node
+
+[kube-cluster:children]
+kube-node
+kube-master
+lb
+
+
+#代理节点
+#多管理节点时必须配置有代理节点
+#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现haproxy高可用,lb_only表示不使用keepalived
+[lb]
+
+# 预留组，后续添加node节点使用
+[new-node]
+
+[all:vars]
+#集群 MASTER IP  如果单master部署，则该值为master ip，如果多master部署,则改值为lb的vip
+MASTER_IP="192.168.110.114"
+
+# 基础镜像
+BASE_IMAGE_URL=docker.io
+
+#gfs磁盘设备名
+gfs_device=/dev/sdb

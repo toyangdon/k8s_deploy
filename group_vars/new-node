@@ -1,5 +1,5 @@
 node_labels: >-
-  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node-role.kubernetes.io/kube-compute-node=true
+  {%- if NODE_LABELS is defined -%}{{NODE_LABELS}},{%- endif -%}node.kubernetes.io/kube-compute-node=true
   
 node_taints: >-
   {%- if NODE_TAINTS is defined -%}{{NODE_TAINTS}}{%- endif -%}

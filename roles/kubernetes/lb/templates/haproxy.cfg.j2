@@ -39,7 +39,7 @@ listen kube-master-insecure
 
 listen kube-node
         bind {{MASTER_IP}}:443
-        mode http
+        mode tcp
         option http-server-close
 #        timeout tunnel 1h
 #        timeout client-fin 30

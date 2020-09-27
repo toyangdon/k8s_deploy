@@ -15,7 +15,7 @@ SERVICE_CIDR: "10.68.0.0/16"
 CLUSTER_CIDR: "172.20.0.0/16"
 
 # 服务端口范围 (NodePort Range)
-NODE_PORT_RANGE: "80-30000"
+NODE_PORT_RANGE: "10000-32767"
 
 # kubernetes 服务 IP (预分配，一般是 SERVICE_CIDR 中第一个IP)
 CLUSTER_KUBERNETES_SVC_IP: "10.68.0.1"
@@ -101,4 +101,4 @@ gw_tools_image: toyangdon/gw-tools:1.1
 cfssl_cmd: "{{bin_dir}}/docker run --rm -v {{ ca_dir }}:/workdir {{ gw_tools_image }} sh -c"
 
 #域名后缀
-common_domain_suffix=ccyunchina.cn
+common_domain_suffix: ccyunchina.cn

@@ -33,8 +33,14 @@
 # 设置系统参数for k8s
 - name: Load br_netfilter module
   modprobe:
-    name: br_netfilter
+    name: "{{ item }}"
     state: present
+  with_items:
+    - br_netfilter
+    - ip_vs
+    - ip_vs_rr
+    - ip_vs_wrr
+    - ip_vs_sh
   register: br_netfilter
 
 - name: Add br_netfilter into /etc/modules-load.d/kubespray.conf
@@ -43,6 +49,10 @@
     content: |-
       ### This file is managed by Ansible
       br-netfilter
+      ip_vs
+      ip_vs_rr
+      ip_vs_wrr
+      ip_vs_sh
     owner: root
     group: root
     mode: 0644

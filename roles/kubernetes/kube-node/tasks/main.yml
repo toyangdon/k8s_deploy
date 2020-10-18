@@ -9,39 +9,10 @@
   - host-local
   - loopback
 
-
 - name: 关闭swap
   shell: swapoff -a && grep "swappiness" /etc/sysctl.conf ; if [ $? -eq 0 ];then { sed -i "s/vm.swap.*$/vm.swappiness = 0/g" /etc/sysctl.conf; } else { echo "vm.swappiness = 0" >> /etc/sysctl.conf; } fi && sed -i '/swap/d' /etc/fstab
 
 ##----------kubelet 配置部分--------------
-# kubelet 启动时向 kube-apiserver 发送 TLS bootstrapping 请求，需要绑定该角色
-# 只需单节点执行一次
-- block:
-  - name: 等待master节点启动
-    shell: while true; do status=`curl http://{{ MASTER_IP }}:{{ MASTER_INSECURE_PORT }}/healthz`;if [ "${status}" = "ok" ];then break;else sleep 3;fi done
-  - name: get clusterrolebinding info
-    shell: "{{ bin_dir }}/kubectl get clusterrolebinding --all-namespaces"
-    register: clusterrolebinding_info
-    run_once: true
-    
-  - name: kubelet-bootstrap-setting
-    shell: "{{ bin_dir }}/kubectl create clusterrolebinding kubelet-bootstrap \
-          --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap"
-    run_once: true
-    when: 'not ansible_check_mode and "kubelet-bootstrap" not in clusterrolebinding_info.stdout'
-    
-  - name: 安装bootstrap.kubeconfig配置文件
-    copy: src=/etc/kubernetes/bootstrap.kubeconfig dest=/etc/kubernetes/bootstrap.kubeconfig
-    when: not ansible_check_mode
-# 配置证书自动续期
-  - name: kubelet-cert-renew-setting
-    shell: "{{ bin_dir }}/kubectl apply -f {{base_dir}}/roles/kubernetes/kube-node/files/controller-manager-auto-appove.yaml"
-    delegate_to: localhost
-    run_once: true
-  when: node_role == "compute" 
-  
-
-
 #master\lb节点 kubelet 启动所需的kubeconfig文件
 - block:
   - name: 创建kubelet-csr.json文件
@@ -79,8 +50,14 @@
   - name: kubelet.kubeconfig设置上下文
     shell: "{{ bin_dir}}/kubectl config use-context system:node:{{NODE_ID}}@kubernetes \
       --kubeconfig=/etc/kubernetes/kubelet.kubeconfig"
-  when: node_role == "master" or node_role == "lb"
+  when: "kube-master" in group_names or "lb" in group_names
+  
+#计算节点则创建bootstrap.kubeconfig文件
+- name: 安装bootstrap.kubeconfig配置文件
+  copy: src=/etc/kubernetes/bootstrap.kubeconfig dest=/etc/kubernetes/bootstrap.kubeconfig
+  when: "kube-master" not in group_names and "lb" not in group_names
 
+#准备kubelet服务
 - name: 创建kubelet的工作目录
   file: name=/data/kubelet state=directory
 
@@ -92,6 +69,24 @@
   template: src=kubelet-config.yaml.j2 dest={{kubelet_dir}}/config.yaml
   tags: upgrade_k8s
 
+# kubelet 启动时向 kube-apiserver 发送 TLS bootstrapping 请求，需要绑定该角色
+# 只需单节点执行一次
+- block:
+  - name: 等待master节点启动
+    shell: while true; do status=`curl http://{{ MASTER_IP }}:{{ MASTER_INSECURE_PORT }}/healthz`;if [ "${status}" = "ok" ];then break;else sleep 3;fi done
+    
+  - name: kubelet-bootstrap-setting
+    shell: "{{ bin_dir }}/kubectl apply -f {{base_dir}}/roles/kubernetes/kube-node/files/kubelet-bootstrap.yaml"
+    delegate_to: localhost
+    run_once: true
+    
+# 配置证书自动续期
+  - name: kubelet-cert-renew-setting
+    shell: "{{ bin_dir }}/kubectl apply -f {{base_dir}}/roles/kubernetes/kube-node/files/controller-manager-auto-appove.yaml"
+    delegate_to: localhost
+    run_once: true
+  when: '"kube-node" in group_names and not ansible_check_mode'
+  
 - name: restart service kubelet
   systemd:
     state: restarted
@@ -99,12 +94,6 @@
     name: kubelet
     enabled: yes
   tags: upgrade_k8s
-
-##-------kube-proxy部分----------------
-- name: 安装kube-proxy.kubeconfig配置文件
-  copy: src=/etc/kubernetes/kube-proxy.kubeconfig dest=/etc/kubernetes/kube-proxy.kubeconfig
-  when: not ansible_check_mode
-#-------------------------------------------
 
 - block:
   # 批准 node 节点，首先轮询等待kubelet启动完成
@@ -127,7 +116,7 @@
     when: '"Pending" in csr_info.stdout'
     ignore_errors: true
     run_once: true
-  when: node_role not in [ "master","lb" ]
+  when: “kube-node" in group_names
 
 - block:
   - name: 安装nfs客户端
@@ -163,47 +152,13 @@
     - glusterfs
     - glusterfs-fuse
     when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"
-  when: node_role != "lb"
+  when: "lb" not in group_names
   
 ##-------日志清理部分------------------------------------
 - name: master日志清理
   copy: src=logmgr-master.sh dest=/etc/cron.daily/logmgr-master.sh mode=0755
-  when: node_role == "master"
+  when: "kube-master" in group_names
 - name: 非master日志清理
   copy: src=logmgr-node.sh dest=/etc/cron.daily/logmgr-node.sh mode=0755
-  when: node_role != "master"
+  when: "kube-master" not in group_names
 #--------------------------------------------------------------
-
-##------------harbor处理----------------------------------------待改成handler
-- block:
-  - name: 等待harbor启动
-    shell: "curl -m 10 -o /dev/null -s -w %{http_code} {{harbor_ext_endpoint}}/api/systeminfo"
-    register: harbor_result
-    until: '"200" == harbor_result.stdout'
-    retries: 60
-    delay: 10
-    
-  - name: 确认harbor register启动
-    shell: "curl {{harbor_ext_endpoint}}/v2/"
-    retries: 20
-    delay: 5
- 
-  - name: 从images_list找到所需要创建的项目
-    shell: "cat {{images_path}}/images_list |cut -d/ -f1|sort -u"
-    register: project_list
-    when: push_images == true
-    
-  - name: 在harbor中创建所需的项目
-    with_items: "{{ project_list.stdout_lines }}"
-    shell: "curl -u admin:{{harbor_admin_password}} -o /dev/null -s -m 10 -w %{http_code} -H 'Content-Type:application/json' -X POST -d '{ \"project_name\": \"{{ item }}\" , \"public\": 1  }' {{harbor_ext_endpoint}}/api/projects"
-    when: push_images == true
-    
-  - name: 登陆镜像仓库
-    shell: "{{bin_dir}}/docker login {{harbor_ext_endpoint}} -u admin -p{{harbor_admin_password}}"
-    when: push_images == true
-    
-  - name: 推送镜像
-    shell: "for image in `cat {{images_path}}/images_list`;do {{bin_dir}}/docker push {{harbor_ext_endpoint}}/$image;done"
-    when: push_images == true
-  when: '"harbor" in group_names and not ansible_check_mode'
-  run_once: true

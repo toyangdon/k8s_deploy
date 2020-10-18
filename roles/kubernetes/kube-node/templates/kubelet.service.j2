@@ -16,7 +16,7 @@ ExecStart={{ bin_dir }}/kubelet \
   --hostname-override={{ NODE_ID }} \
   --node-ip={{ inventory_hostname }} \
   --pod-infra-container-image={{BASE_IMAGE_URL}}/{{ k8s_pod_infra_container_image }} \
-{% if node_role not in ["master","lb"] %}
+{% if "kube-master" not in group_names and "lb" not in group_names %}
   --bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
 {% endif %}
   --pod-manifest-path=/etc/kubernetes/manifests \

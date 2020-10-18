@@ -74,25 +74,15 @@ node_taints: >-
 docker_insecure_registry: >-
   {{BASE_IMAGE_URL}}
 
-#是否部署efk
-deploy_efk: >-
-  {%- if groups['elasticsearch']|length !=0 and groups['logstash']|length !=0 -%}true{%- else -%}false{%- endif -%}
+#是否部署glusterfs
+deploy_gfs: >-
+  {%- if groups['kube-storage-node']|length !=0 -%}true{%- else -%}false{%- endif -%}
 
 #是否部署监控告警
-deploy_monitor: >-
-  {%- if groups['elasticsearch']|length !=0 -%}true{%- else -%}false{%- endif -%}
-  
-#是否需要为监控告警部署es 。如果不需要部署elk，却需要部署监控告警，因此需要为监控告警单独部署es 
-deploy_es: >-
-  {%- if not deploy_elk and deploy_monitor -%}true{%- else -%}false{%- endif -%}  
+deploy_monitor: true
   
 #是否离线
 deploy_offline: false
-
-#是否加载镜像
-load_images: true
-#是否推送镜像
-push_images: true
 
 #工具镜像（证书）
 gw_tools_image: toyangdon/gw-tools:1.1

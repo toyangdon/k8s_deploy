@@ -53,11 +53,20 @@
   when: p.stat.isreg is not defined 
 
 - name: 创建etcd工作目录
-  file: name=/data/etcd state=directory
+  file: name={{data_dir}}/etcd state=directory
 
 - name: 创建etcd yml文件
   template: src=etcd.yml.conf.j2 dest=/etc/kubernetes/manifests/etcd.yml
   tags: upgrade_k8s
+  
+- name: 准备etcd备份目录
+  file: name={{data_dir}}/backup/etcd state=directory
+   
+- name: 复制etcd备份脚本
+  copy: src=etcd_backup.sh dest={{data_dir}}/backup/etcd/etcd_backup.sh mode=755
+ 
+- name: 设置etcd定时任务
+  cron: name='etcd cronjob' minute=1 hour=1 job={{data_dir}}/backup/etcd/etcd_backup.sh
   
 ##---------------------------------------------------
 # 创建aggregator proxy相关证书

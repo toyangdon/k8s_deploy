@@ -65,6 +65,9 @@ spec:
         - mountPath: /lib/modules
           name: lib-modules
           readOnly: true
+        - mountPath: /etc/kubernetes/kube-proxy.kubeconfig
+          name: kube-config
+          readOnly: true
       volumes:
       - name: varlog
         hostPath:
@@ -77,6 +80,9 @@ spec:
       - name: lib-modules
         hostPath:
           path: /lib/modules
+      - name: kube-config
+        hostPath:
+          path: /etc/kubernetes/kube-proxy.kubeconfig
       serviceAccountName: kube-proxy
       
 ---

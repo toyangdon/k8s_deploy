@@ -153,6 +153,13 @@
     - glusterfs-fuse
     when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"
   when: '"lb" not in group_names'
+
+##-------kube-proxy部分----------------
+- name: 安装kube-proxy.kubeconfig配置文件
+  copy: src=/etc/kubernetes/kube-proxy.kubeconfig dest=/etc/kubernetes/kube-proxy.kubeconfig
+  when: not ansible_check_mode
+#-------------------------------------------
+
   
 ##-------日志清理部分------------------------------------
 - name: master日志清理

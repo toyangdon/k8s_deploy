@@ -1,26 +1,21 @@
-# 部署节点：运行ansible 脚本的节点
 [deploy]
-192.168.10.50
+10.10.101.45
 
 #节点配置
-#NODE_ID为必填参数，将做于节点hostname设置，注意请不要输入下划线
-#管理节点
+#管理节点 
 [kube-master]
-192.168.10.50 NODE_ID=master-50
-192.168.10.51 NODE_ID=master-51
-192.168.10.52 NODE_ID=master-52
+10.10.101.59
+10.10.101.45
+10.10.101.63
 
 #计算节点
 [kube-compute-node]
-192.168.10.57 NODE_ID=node-57
-192.168.10.58 NODE_ID=node-58
-192.168.10.59 NODE_ID=node-59
+10.10.101.98
+10.10.101.62
 
 #存储节点
-#一定要有一个节点打上node-role.kubernetes.io/heketi=true的标签
 [kube-storage-node]
-192.168.10.53 NODE_ID=storage-53  NODE_LABELS="node-role.kubernetes.io/heketi=true" 
-192.168.10.54 NODE_ID=storage-54
+10.10.101.60
 
 [kube-node:children]
 kube-compute-node
@@ -29,50 +24,25 @@ kube-storage-node
 [kube-cluster:children]
 kube-node
 kube-master
+lb
 
-#镜像仓库所在节点
-[harbor]
-#192.168.10.238
-
-#数据库节点
-#[database]
-#192.168.10.240
-
-
-#logstash节点
-[logstash]
-192.168.10.68 NODE_ID=logstash-68
-192.168.10.69 NODE_ID=logstash-69
-192.168.10.70 NODE_ID=logstash-70
-
-#elasticsearch节点
-[elasticsearch]
-192.168.10.65 NODE_ID=es-65
-192.168.10.66 NODE_ID=es-66
-#192.168.10.172 NODE_ID=es-172
 
 #代理节点
 #多管理节点时必须配置有代理节点
-#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现nginx高可用,lb_only表示不使用keepalived
+#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现haproxy高可用,lb_only表示不使用keepalived
 [lb]
-192.168.10.61 NODE_ID=lb-61 LB_ROLE=master
-192.168.10.62 NODE_ID=lb-62 LB_ROLE=backup
-[lb:vars]
-#网卡名称 如果不定义LB_IF参数，将自动取得默认网卡，如果不使用默认网卡，请设置此参数。一般情况不需要设置此参数
-#LB_IF=ens3
+10.10.101.77
+10.10.101.28
 
 # 预留组，后续添加node节点使用
 [new-node]
 
 [all:vars]
 #集群 MASTER IP  如果单master部署，则该值为master ip，如果多master部署,则改值为lb的vip
-MASTER_IP="192.168.10.60"
+MASTER_IP="10.10.101.201"
 
 # 基础镜像
-BASE_IMAGE_URL=192.168.10.50
+BASE_IMAGE_URL=docker.io
 
 #gfs磁盘设备名
 gfs_device=/dev/vdb
-
-#域名后缀
-common_domain_suffix=cs2025.cn

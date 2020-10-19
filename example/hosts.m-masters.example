@@ -28,8 +28,7 @@ lb
 
 
 #代理节点
-#多管理节点时必须配置有代理节点
-#LB_ROLE：master、backup、lb_only，master\backup表示使用keepalived实现haproxy高可用,lb_only表示不使用keepalived
+#多管理节点时必须配置有代理节点,部署keepalived\haproxy服务
 [lb]
 10.10.101.77
 10.10.101.28
@@ -44,5 +43,5 @@ MASTER_IP="10.10.101.201"
 # 基础镜像
 BASE_IMAGE_URL=docker.io
 
-#gfs磁盘设备名
+#gfs磁盘设备名 glusterfs存储节点上用于存储集群的磁盘裸设备,请根据实际情况修改
 gfs_device=/dev/vdb

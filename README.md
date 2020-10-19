@@ -1,6 +1,6 @@
 # 说明
 *部署脚本于安装arm版kubernetes集群。*  
-容器云部署脚本中包括了kubernetes底层组件、harbor、elfk等一系列服务的安装。采用ansbile脚本实现自动安装，运维人员需要对ansible工具有一定简单了解。主要服务基本实现全容器化、k8s化部署，可以通过kubernetes dashboard监控到所有容器服务；部署脚本基于centos 7 或者kylin 4.0.2，要求内核版本为4以上；既提供一键快速安装方式，也提供分步执行安装方式。
+容器云部署脚本中包括了kubernetes底层组件、harbor、elfk等一系列服务的安装。采用ansbile脚本实现自动安装，运维人员需要对ansible工具有一定简单了解。主要服务基本实现全容器化、k8s化部署，可以通过kubernetes dashboard监控到所有容器服务；部署脚本基于centos 7 或者kylin v10 sp1，要求内核版本为4以上；既提供一键快速安装方式，也提供分步执行安装方式。
 # 组件版本
 | 名称                    | 版本号       | 备注     |
 |-------------------------|--------------|----------|
@@ -29,25 +29,20 @@
 # 部署示意图
 ![k8s部署图](https://github.com/toyangdon/k8s_deploy/blob/master/kubernetes%20%E7%BB%84%E7%BB%87%E5%9B%BE.png?raw=true)
 # 快速安装
-1. 下载部署文件到部署节点的/etc/ansible目录下  
-2. 安装ansible  
-**CentOS**   
-`rpm -i bin/ansible/*.rpm`  
-**Ubuntu Kylin**  
-向`/etc/apt/sources.list`文件中添加以下行  
-`deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main`  
-执行  
-`apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367`  
-`apt update`  
-`apt install -y ansible`  
+1. 安装ansible
+`yum install -y ansible`
+2. 下载部署文件到部署节点的/etc/ansible目录下  
+`wget https://github.com/toyangdon/k8s_deploy/archive/master.zip`  
+`unzip master.zip`  
+`cp -rf k8s_deploy-master/* /etc/ansible/`  
 3. 配置集群安装信息  
+**单机部署**
+`cp -f example/hosts.allinone.example hosts`  
+**高可用集群部署**
 `cp -f example/hosts.m-masters.example hosts`  
 **根据实际情况修改`hosts`文件**  
 4. 配置ssh免密码  
 `sh tools/ssh-key-copy.sh root ${passwd} #请输入实际的root用户密码`  
-***Ubuntu Kylin 报错解决`Syntax error: Bad fd number`***  
-`mv /bin/sh /bin/sh.orig`  
-`ln -s /bin/bash /bin/sh`  
 5. 执行一键安装  
 `ansible-playbook setup.yml`  
 
@@ -64,7 +59,7 @@
 7. `ansible-playbook playbooks/kubernetes/07.calico.yml` 在主机上准备calico服务所需要的相关安装文件（与flannel可选）
 8. `ansible-playbook playbooks/kubernetes/07.flannel.yml` 在主机上准备flannel服务所需要的相关安装文件（与calico可选） （暂时不可用）
 9. `ansible-playbook playbooks/kubernetes/09.storage-nfs.yml` 安装nfs服务（与gfs可选）（暂时不可用）
-10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务 (暂时不可用）
+10. `ansible-playbook playbooks/kubernetes/10.storage-gluster.yml` 准备安装gfs服务  
 11. `ansible-playbook playbooks/kubernetes/20.addnode.yml` 新增节点
 12. `ansible-playbook playbooks/kubernetes/30.addons.yml` kubernetes所有插件服务的部署，包括kube-proxy、kubedns、calico、glusterfs等等
 13. `ansible-playbook playbooks/kubernetes/90.setup.yml` 一键安装kubernetes,即顺序执行以上所有步骤（除了20.addnode）

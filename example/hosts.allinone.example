@@ -12,7 +12,6 @@
 
 #存储节点
 [kube-storage-node]
-192.168.110.114
 
 [kube-node:children]
 kube-compute-node
@@ -40,4 +39,4 @@ MASTER_IP="192.168.110.114"
 BASE_IMAGE_URL=docker.io
 
 #gfs磁盘设备名
-gfs_device=/dev/sdb
+#gfs_device=/dev/sdb

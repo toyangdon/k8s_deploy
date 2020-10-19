@@ -186,7 +186,7 @@ metadata:
 spec:
   ports:
   - name: port1
-    nodePort: 1194
+    nodePort: 11940
     port: 1194
     protocol: UDP
     targetPort: 1194

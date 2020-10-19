@@ -50,12 +50,12 @@
   - name: kubelet.kubeconfig设置上下文
     shell: "{{ bin_dir}}/kubectl config use-context system:node:{{NODE_ID}}@kubernetes \
       --kubeconfig=/etc/kubernetes/kubelet.kubeconfig"
-  when: "kube-master" in group_names or "lb" in group_names
+  when: '"kube-master" in group_names or "lb" in group_names'
   
 #计算节点则创建bootstrap.kubeconfig文件
 - name: 安装bootstrap.kubeconfig配置文件
   copy: src=/etc/kubernetes/bootstrap.kubeconfig dest=/etc/kubernetes/bootstrap.kubeconfig
-  when: "kube-master" not in group_names and "lb" not in group_names
+  when: '"kube-master" not in group_names and "lb" not in group_names'
 
 #准备kubelet服务
 - name: 创建kubelet的工作目录
@@ -116,7 +116,7 @@
     when: '"Pending" in csr_info.stdout'
     ignore_errors: true
     run_once: true
-  when: “kube-node" in group_names
+  when: '"kube-node" in group_names'
 
 - block:
   - name: 安装nfs客户端
@@ -152,13 +152,13 @@
     - glusterfs
     - glusterfs-fuse
     when: storage_type == "glusterfs" and not deploy_offline and ansible_distribution == "CentOS"
-  when: "lb" not in group_names
+  when: '"lb" not in group_names'
   
 ##-------日志清理部分------------------------------------
 - name: master日志清理
   copy: src=logmgr-master.sh dest=/etc/cron.daily/logmgr-master.sh mode=0755
-  when: "kube-master" in group_names
+  when: '"kube-master" in group_names'
 - name: 非master日志清理
   copy: src=logmgr-node.sh dest=/etc/cron.daily/logmgr-node.sh mode=0755
-  when: "kube-master" not in group_names
+  when: '"kube-master" not in group_names'
 #--------------------------------------------------------------

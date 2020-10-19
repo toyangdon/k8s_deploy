@@ -36,7 +36,7 @@ ExecStart={{ bin_dir }}/kubelet \
   --docker-root={{data_dir}}/docker \
   --v=2
 Restart=always
-RestartSec=5
+RestartSec=15
 
 [Install]
 WantedBy=multi-user.target

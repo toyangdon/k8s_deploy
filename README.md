@@ -34,9 +34,9 @@
 2. 下载部署文件到部署节点的/etc/ansible目录下  
 `git clone –depth=1 https://github.com/toyangdon/k8s_deploy.git`  
 由于从github上下载项目，项目中的大文件中会出现损坏，需要单独下载kubelet文件  
-`wget https://media.githubusercontent.com/media/toyangdon/k8s_deploy/master/bin/kubernetes/kubelet`
-将下载的kubelet文件，替换到k8s_deploy/bin/kubernetes/目录下  
-`cp kubelet k8s_deploy/bin/kubernetes/`
+`wget https://media.githubusercontent.com/media/toyangdon/k8s_deploy/master/bin/kubernetes/kubelet`  
+将下载的kubelet文件，替换到k8s_deploy/bin/kubernetes/目录下   
+`cp kubelet k8s_deploy/bin/kubernetes/`  
 将部署文件复制到/etc/ansible目录下  
 `cp -rf k8s_deploy/* /etc/ansible/`  
 3. 配置集群安装信息  
@@ -52,8 +52,8 @@
 `ansible-playbook setup.yml`  
 **kylin v10 sp1**  
 `ansible-playbook -e 'ansible_python_interpreter=/usr/bin/python3.7' setup.yml`  
-**单机部署**
-`ansible-playbook -e ‘apiserver_mem_requests=100Mi’  -e ‘apiserver_cpu_requests=100m’  setup.yml`
+**单机部署**  
+`ansible-playbook -e 'apiserver_mem_requests=100Mi'  -e 'apiserver_cpu_requests=100m'  setup.yml`  
 # 分步安装
 `playbooks`目录提供分步安装的相关playbook，主要分为两大块`kubernetes`和`gpaas`
 ## `kubernetes` 部署

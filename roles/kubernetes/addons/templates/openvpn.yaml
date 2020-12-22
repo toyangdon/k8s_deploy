@@ -117,9 +117,9 @@ data:
     route 192.168.254.0 255.255.255.0
 
     ### Push Configurations Below
-    push "block-outside-dns"
-    push "dhcp-option DNS 8.8.8.8"
-    push "dhcp-option DNS 8.8.4.4"
+    #push "block-outside-dns"
+    #push "dhcp-option DNS 8.8.8.8"
+    #push "dhcp-option DNS 8.8.4.4"
 
     duplicate-cn
   ovpn_env.sh: |
@@ -213,6 +213,15 @@ spec:
       labels:
         app: openvpn
     spec:
+      initContainers:
+      - command:
+        - /sbin/sysctl
+        - -w
+        - net.ipv4.ip_forward=1
+        image: {{BASE_IMAGE_URL}}/{{openvpn_image}}
+        name: init-containers
+        securityContext:
+          privileged: true
       containers:
       - image: {{BASE_IMAGE_URL}}/{{openvpn_image}}
         imagePullPolicy: IfNotPresent
@@ -233,8 +242,6 @@ spec:
             cpu: {{ openvpn_cpu_limit }}
             memory: {{ openvpn_mem_limit }}
         volumeMounts:
-        - mountPath: /opt/applogs
-          name: openvpn-volume-elk-log
         - mountPath: /etc/openvpn
           name: openvpn-configmap
       dnsPolicy: ClusterFirst
@@ -243,9 +250,6 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-      - hostPath:
-          path: /data/log
-          type: ""
         name: openvpn-volume-elk-log
       - configMap:
           defaultMode: 420

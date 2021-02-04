@@ -250,7 +250,6 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-        name: openvpn-volume-elk-log
       - configMap:
           defaultMode: 420
           name: openvpn-configmap
